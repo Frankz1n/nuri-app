@@ -8,6 +8,7 @@ import {
   completeLessonTransition,
   queueErrorTransition,
   recordSkillAttemptTransition,
+  recordListeningAnswerTransition,
   reviewCardTransition,
   setProfileTransition,
   toggleFavoriteTransition,
@@ -65,6 +66,12 @@ export function NuriProvider({ children }: { children: ReactNode }) {
       clearError: (itemId, sessionId) => apply((current) => clearErrorTransition(current, itemId, sessionId)),
       recordSkillAttempt: (skillId, isHit) => apply((current) => recordSkillAttemptTransition(current, skillId, isHit)),
       setProfile: (patch) => apply((current) => setProfileTransition(current, patch)),
+      recordListeningAnswer: (sessionId, index, answer) => {
+        const nextState = recordListeningAnswerTransition(stateRef.current, sessionId, index, answer)
+        if (nextState === stateRef.current) return false
+        commit(nextState)
+        return true
+      },
       setDraft: (type, payload) =>
         apply((current) => ({ ...current, activityDraft: { type, payload, updatedAt: new Date().toISOString() } })),
       clearDraft: () => apply((current) => (current.activityDraft === null ? current : { ...current, activityDraft: null })),

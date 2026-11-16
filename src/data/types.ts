@@ -50,7 +50,7 @@ export interface VocabItem {
   audioKey?: string
 }
 
-export type LessonKind = 'letter' | 'review' | 'syllable' | 'batchim' | 'vocab' | 'phrase' | 'reading'
+export type LessonKind = 'letter' | 'review' | 'syllable' | 'batchim' | 'vocab' | 'phrase' | 'reading' | 'live'
 
 export interface Lesson {
   id: string

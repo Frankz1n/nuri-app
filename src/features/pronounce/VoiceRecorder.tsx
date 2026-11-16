@@ -2,22 +2,26 @@ import { useEffect, useRef, useState } from 'react'
 
 const MAX_SECONDS = 20
 
-type RecorderPhase = 'idle' | 'recording' | 'ready' | 'denied' | 'unsupported'
+type RecorderPhase = 'idle' | 'requesting' | 'recording' | 'ready' | 'denied' | 'unsupported'
 
 interface VoiceRecorderProps {
-  promptLabel: string
+  promptLabel?: string
+  practiceMode?: boolean
 }
 
 /**
  * Autoescuta local: grava até 20s, reproduz no aparelho e não persiste.
  * Microfone só é pedido após o toque. Ao desmontar, a captura encerra.
  */
-export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
+export function VoiceRecorder({ promptLabel, practiceMode = false }: VoiceRecorderProps) {
   const [phase, setPhase] = useState<RecorderPhase>(() =>
     typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia ? 'unsupported' : 'idle',
   )
+  const [playbackError, setPlaybackError] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
+  const mounted = useRef(false)
+  const playbackRef = useRef<HTMLAudioElement | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
@@ -35,6 +39,8 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
   }
 
   const revokeUrl = (): void => {
+    playbackRef.current?.pause()
+    playbackRef.current = null
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current)
       objectUrlRef.current = null
@@ -43,18 +49,25 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
 
   const clearRecording = (): void => {
     revokeUrl()
+    setPlaybackError(false)
     setObjectUrl(null)
     setElapsed(0)
     chunksRef.current = []
   }
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      const recorder = mediaRecorderRef.current
+      if (recorder) {
+        recorder.onstop = null
+        recorder.ondataavailable = null
+      }
       cleanupStream()
       revokeUrl()
-    },
-    [],
-  )
+    }
+  }, [])
 
   const stopRecording = (): void => {
     const recorder = mediaRecorderRef.current
@@ -66,10 +79,15 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
   }
 
   const startRecording = async (): Promise<void> => {
-    if (phase === 'unsupported') return
+    if (phase === 'unsupported' || phase === 'requesting') return
     clearRecording()
+    setPhase('requesting')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (!mounted.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       streamRef.current = stream
       const recorder = new MediaRecorder(stream)
       mediaRecorderRef.current = recorder
@@ -90,23 +108,21 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
       recorder.start()
       setPhase('recording')
       setElapsed(0)
+      let seconds = 0
       timerRef.current = window.setInterval(() => {
-        setElapsed((seconds) => {
-          const next = seconds + 1
-          if (next >= MAX_SECONDS) stopRecording()
-          return Math.min(next, MAX_SECONDS)
-        })
+        setElapsed(++seconds)
+        if (seconds >= MAX_SECONDS) stopRecording()
       }, 1000)
     } catch {
       cleanupStream()
-      setPhase('denied')
+      if (mounted.current) setPhase('denied')
     }
   }
 
   if (phase === 'unsupported') {
     return (
       <p className="field__hint" role="status">
-        Este navegador não permite gravar áudio. Você ainda pode estudar escrita e leitura.
+        Este navegador não permite gravar áudio. Você ainda pode praticar a resposta em voz alta.
       </p>
     )
   }
@@ -115,8 +131,8 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
     <section className="voice-recorder card" aria-label="Autoescuta">
       <h3 className="card__title">Sua vez</h3>
       <p className="card__text">
-        Grave até {MAX_SECONDS}s dizendo <strong lang="ko">{promptLabel}</strong>. Só você ouve — não enviamos nem salvamos a
-        gravação.
+        {promptLabel ? <>Grave até {MAX_SECONDS}s dizendo <strong lang="ko">{promptLabel}</strong>.</> : 'Grave sua resposta e ouça como ficou.'}
+        {' '}A gravação fica só nesta tela.
       </p>
 
       {phase === 'denied' ? (
@@ -134,11 +150,12 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
           <button
             type="button"
             className="button button--primary"
+            disabled={phase === 'requesting'}
             onClick={() => {
               void startRecording()
             }}
           >
-            {phase === 'ready' ? 'Gravar de novo' : 'Gravar'}
+            {phase === 'requesting' ? 'Aguardando microfone…' : phase === 'ready' ? 'Gravar de novo' : 'Gravar'}
           </button>
         )}
         {objectUrl ? (
@@ -146,8 +163,11 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
             type="button"
             className="button button--secondary"
             onClick={() => {
+              setPlaybackError(false)
+              playbackRef.current?.pause()
               const audio = new Audio(objectUrl)
-              void audio.play()
+              playbackRef.current = audio
+              void audio.play().catch(() => setPlaybackError(true))
             }}
           >
             Ouvir minha voz
@@ -160,7 +180,10 @@ export function VoiceRecorder({ promptLabel }: VoiceRecorderProps) {
         ) : null}
       </div>
 
-      <p className="field__hint">Análise automática de pronúncia com IA em breve. Por enquanto é só autoescuta.</p>
+      {playbackError ? <p className="field__hint" role="status">Não foi possível reproduzir sua gravação.</p> : null}
+      <p className="field__hint">
+        {practiceMode ? 'Compare com o modelo quando estiver pronto. Esta prática não tem nota.' : 'Ouça sua gravação para praticar por conta própria. Esta prática não tem nota.'}
+      </p>
     </section>
   )
 }

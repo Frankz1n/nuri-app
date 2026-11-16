@@ -99,6 +99,21 @@ export interface ReadStep extends StepBase {
   readingId: string
 }
 
-export type Step = InfoStep | ChoiceStep | TilesStep | WriteStep | PairsStep | CardStep | ReadStep
+export interface LiveListeningStep extends StepBase {
+  kind: 'live-listen'
+  situationId: string
+  take: 'opening' | 'transfer'
+  options: string[]
+  answerIndex: number
+}
 
-export const isGradedStep = (step: Step): boolean => step.kind !== 'info' && step.kind !== 'read'
+export interface LiveDialogueStep extends StepBase {
+  kind: 'live-read' | 'live-speak'
+  situationId: string
+}
+
+export type Step =
+  | InfoStep | ChoiceStep | TilesStep | WriteStep | PairsStep | CardStep | ReadStep
+  | LiveListeningStep | LiveDialogueStep
+
+export const isGradedStep = (step: Step): boolean => step.kind !== 'info' && step.kind !== 'read' && step.kind !== 'live-read' && step.kind !== 'live-speak'

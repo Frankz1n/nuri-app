@@ -1,6 +1,7 @@
-import { LETTERS, getLetterById, getPhraseById, getReadingById, getVocabById } from '../data'
+import { LETTERS, getLetterById, getLiveSituation, getPhraseById, getReadingById, getVocabById } from '../data'
 import type { Lesson, VocabItem } from '../data'
 import { sample, shuffle } from './random'
+import { buildLiveListeningStep } from './liveListening'
 import type { Random } from './random'
 import type { ChoiceStep, InfoStep, Step } from './steps'
 import {
@@ -30,7 +31,7 @@ const buildLetterLessonSteps = (lesson: Lesson, random: Random): Step[] => {
     title: 'Conheça a letra',
     big: letter.char,
     bigLanguage: 'ko',
-    caption: `${letter.name} · som "${letter.romanization}"`,
+    caption: `${letter.name} · romanização "${letter.romanization}"`,
     lines: [
       `Exemplo: ${letter.example.hangul} (${letter.example.romanization}) — ${letter.example.translation}.`,
       `Esta letra tem ${letter.strokes.length} ${letter.strokes.length === 1 ? 'traço' : 'traços'}. Na próxima etapa você vai desenhá-la.`,
@@ -282,6 +283,17 @@ export const buildLessonSteps = (lesson: Lesson, random: Random): Step[] => {
   if (lesson.id === 'lesson-u2-16') return buildPiKiDemoSteps(random)
 
   switch (lesson.kind) {
+    case 'live': {
+      const situation = getLiveSituation(lesson.id)
+      if (!situation) return []
+      return [
+        buildLiveListeningStep(situation, 'opening', random),
+        { kind: 'live-read', skillId: 'reading', situationId: situation.id },
+        { kind: 'live-speak', skillId: 'speaking-practice', situationId: situation.id },
+        buildLiveListeningStep(situation, 'transfer', random),
+        buildWriteStep(situation.letterId, { guide: 'guided', prompt: situation.writingPrompt }),
+      ]
+    }
     case 'letter':
       return buildLetterLessonSteps(lesson, random)
     case 'review':

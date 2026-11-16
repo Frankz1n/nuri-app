@@ -2,6 +2,7 @@ import {
   LETTERS,
   VOCABULARY,
   getLetterById,
+  getLiveSituation,
   getPhraseById,
   getReadingById,
   getVocabById,
@@ -9,6 +10,7 @@ import {
 import type { Letter, Phrase, Reading, VocabItem } from '../data'
 import { composeSyllable, decomposeSyllable, isHangulSyllable } from './hangul'
 import { sample, shuffle, shuffleDifferent } from './random'
+import { buildLiveListeningStep } from './liveListening'
 import type { Random } from './random'
 import type {
   AssembleHelpLevel,
@@ -24,7 +26,9 @@ import type {
 import { layoutForSyllable } from './syllableFeedback'
 
 export const SKILL_LABELS: Readonly<Record<string, string>> = {
-  'letter-sound': 'Som das letras',
+  'letter-sound': 'Romanização das letras',
+  listening: 'Compreensão oral',
+  'listening-transfer': 'Escuta em outro contexto',
   'letter-char': 'Reconhecer letras',
   'letter-block': 'Letras em blocos',
   write: 'Escrita',
@@ -54,12 +58,12 @@ export const buildLetterSoundStep = (letter: Letter, random: Random): ChoiceStep
     kind: 'choice',
     skillId: 'letter-sound',
     errorId: `letter:${letter.id}`,
-    prompt: 'Qual é o som desta letra?',
+    prompt: 'Qual é a romanização desta letra?',
     big: letter.char,
     bigLanguage: 'ko',
     options: options.map((option) => ({ text: option.romanization, language: 'pt' })),
     answerIndex: options.findIndex((option) => option.id === letter.id),
-    explanation: `${letter.char} (${letter.name}) tem o som "${letter.romanization}".`,
+    explanation: `${letter.char} (${letter.name}) aparece como "${letter.romanization}" na romanização.`,
   }
 }
 
@@ -385,6 +389,11 @@ export const buildCardStep = (vocabId: string): CardStep => ({ kind: 'card', ski
 export const buildStepForErrorId = (errorId: string, random: Random): Step | null => {
   const [kind, firstPart, secondPart] = errorId.split(':')
   switch (kind) {
+    case 'live-listen': {
+      const situation = getLiveSituation(firstPart ?? '')
+      if (!situation || (secondPart !== 'opening' && secondPart !== 'transfer')) return null
+      return buildLiveListeningStep(situation, secondPart, random)
+    }
     case 'letter': {
       const letter = getLetterById(firstPart ?? '')
       if (!letter) return null
@@ -424,6 +433,10 @@ export const buildStepForErrorId = (errorId: string, random: Random): Step | nul
 export const describeErrorId = (errorId: string): string => {
   const [kind, firstPart, secondPart] = errorId.split(':')
   switch (kind) {
+    case 'live-listen': {
+      const situation = getLiveSituation(firstPart ?? '')
+      return situation ? `Escuta: ${situation.title}` : errorId
+    }
     case 'letter':
     case 'write': {
       const letter = getLetterById(firstPart ?? '')

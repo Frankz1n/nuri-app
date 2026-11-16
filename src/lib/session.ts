@@ -1,4 +1,4 @@
-import { getLessonById } from '../data'
+import { getLessonById, getLiveSituation } from '../data'
 import type { ActivityDraft } from '../core'
 import type { Step } from './steps'
 
@@ -23,6 +23,11 @@ export type SessionOrigin =
   | { type: 'lesson'; lessonId: string }
   | { type: 'practice'; mode: PracticeMode; argument?: string }
 
+export interface ListeningAnswer {
+  option: number
+  unaided: boolean
+}
+
 export interface SessionDraftPayload {
   origin: SessionOrigin
   sessionId: string
@@ -30,11 +35,12 @@ export interface SessionDraftPayload {
   index: number
   gradedCount: number
   firstTryHits: number
+  listeningAnswer?: ListeningAnswer
 }
 
 export const SESSION_DRAFT_TYPE = 'session'
 
-const STEP_KINDS: readonly string[] = ['info', 'choice', 'tiles', 'write', 'pairs', 'card', 'read']
+const STEP_KINDS: readonly string[] = ['info', 'choice', 'tiles', 'write', 'pairs', 'card', 'read', 'live-listen', 'live-read', 'live-speak']
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -57,14 +63,27 @@ const isCount = (value: unknown): value is number => typeof value === 'number' &
 /** Valida o rascunho salvo: qualquer formato inesperado é descartado em vez de quebrar a tela. */
 export const parseSessionDraft = (draft: ActivityDraft | null): SessionDraftPayload | null => {
   if (!draft || draft.type !== SESSION_DRAFT_TYPE || !isRecord(draft.payload)) return null
-  const { origin: rawOrigin, sessionId, steps, index, gradedCount, firstTryHits } = draft.payload
+  const { origin: rawOrigin, sessionId, steps, index, gradedCount, firstTryHits, listeningAnswer } = draft.payload
   const origin = parseOrigin(rawOrigin)
   if (!origin || typeof sessionId !== 'string' || !Array.isArray(steps) || steps.length === 0) return null
-  const hasValidSteps = steps.every((step) => isRecord(step) && typeof step.kind === 'string' && STEP_KINDS.includes(step.kind))
+  const hasValidSteps = steps.every((step) => {
+    if (!isRecord(step) || typeof step.kind !== 'string' || !STEP_KINDS.includes(step.kind)) return false
+    if (!step.kind.startsWith('live-')) return true
+    if (typeof step.situationId !== 'string' || !getLiveSituation(step.situationId)) return false
+    if (step.kind !== 'live-listen') return true
+    return (step.take === 'opening' || step.take === 'transfer') &&
+      Array.isArray(step.options) && step.options.every((option) => typeof option === 'string') &&
+      isCount(step.answerIndex) && step.answerIndex < step.options.length
+  })
   if (!hasValidSteps || !isCount(index) || index >= steps.length) return null
+  const step = steps[index] as Step
+  const hasListeningAnswer =
+    step.kind === 'live-listen' && isRecord(listeningAnswer) && isCount(listeningAnswer.option) &&
+    listeningAnswer.option < step.options.length && typeof listeningAnswer.unaided === 'boolean'
   return {
     origin,
     sessionId,
+    ...(hasListeningAnswer ? { listeningAnswer: listeningAnswer as unknown as ListeningAnswer } : {}),
     steps: steps as Step[],
     index,
     gradedCount: isCount(gradedCount) ? gradedCount : 0,

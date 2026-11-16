@@ -101,8 +101,7 @@ export function Onboarding() {
         <BrandMark />
         <h1 className="screen__title">Bem-vindo ao Nuri</h1>
         <p className="screen__text">
-          Coreano completo: escrita, sonoridade e leitura. Tudo opcional e dá para pular. Vozes e IA chegam depois — as telas já
-          estão prontas.
+          Aprenda a entender frases em coreano e responder em voz alta. Leia em hangul e pratique a escrita ao longo da trilha.
         </p>
       </header>
 

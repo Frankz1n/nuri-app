@@ -1,4 +1,4 @@
-import { LESSONS, UNITS } from '../data'
+import { LIVE_SITUATIONS, LESSONS, UNITS } from '../data'
 import type { Lesson, Unit } from '../data'
 import { findNextLesson, getLessonsOfUnit, getUnitOfLesson, summarizeUnit } from './catalog'
 import type { PracticeMode } from './session'
@@ -24,10 +24,18 @@ const PHASE_BY_UNIT: Readonly<Record<number, { label: string; hint: string }>> =
   5: { label: 'Palavras e conversa', hint: 'Saudações e pessoas: o coreano começa a fazer sentido.' },
   6: { label: 'Palavras do dia a dia', hint: 'Vocabulário para situações reais.' },
   7: { label: 'Seu mundo', hint: 'Cultura, viagem e interesses em coreano.' },
+  9: { label: 'Escuta e fala', hint: 'Reconheça expressões de uma live e pratique suas respostas.' },
   8: { label: 'Frases e leitura', hint: 'Montar frases e ler textos curtos com compreensão.' },
 }
 
+const LIVE_PRACTICE = {
+  href: `#/lesson/${LIVE_SITUATIONS[0].id}`,
+  title: 'Ouça e responda',
+  reason: 'Pratique expressões que você pode encontrar numa transmissão.',
+}
+
 const PRACTICE_FOR_KIND: Readonly<Record<Lesson['kind'], GuidedStudyPlan['suggestedPractice']>> = {
+  live: LIVE_PRACTICE,
   letter: {
     href: '#/practice/write',
     title: 'Escrita guiada',
@@ -70,13 +78,9 @@ export const buildGuidedStudyPlan = (completedLessons: readonly string[]): Guide
   const lastCompleted = [...LESSONS].reverse().find((lesson) => completedLessons.includes(lesson.id))
   const currentUnit = nextLesson ? getUnitOfLesson(nextLesson) : lastCompleted ? getUnitOfLesson(lastCompleted) : UNITS[0]
   const phase = currentUnit ? PHASE_BY_UNIT[currentUnit.number] : undefined
-  const suggestedPractice = lastCompleted
-    ? PRACTICE_FOR_KIND[lastCompleted.kind]
-    : {
-        href: '#/practice/write',
-        title: 'Escrita guiada',
-        reason: 'Comece treinando o traço das primeiras letras.',
-      }
+  const suggestedPractice = nextLesson?.kind === 'live'
+    ? { ...LIVE_PRACTICE, href: `#/lesson/${nextLesson.id}`, title: nextLesson.title }
+    : lastCompleted ? PRACTICE_FOR_KIND[lastCompleted.kind] : LIVE_PRACTICE
 
   return {
     nextLesson,
@@ -100,20 +104,20 @@ export const PRACTICE_PILLARS: readonly {
   links?: readonly { href: string; title: string; description: string; chip?: string }[]
 }[] = [
   {
+    id: 'sound',
+    title: 'Ouvir e falar',
+    text: 'Escute e responda em situações de live.',
+    links: LIVE_SITUATIONS.map((situation) => ({
+      href: `#/lesson/${situation.id}`,
+      title: situation.title,
+      description: situation.context,
+    })),
+  },
+  {
     id: 'write',
     title: 'Escrever',
     text: 'Traços, sílabas, pares e frases.',
     modes: ['write', 'syllables', 'pairs', 'blocks', 'phrases'],
-  },
-  {
-    id: 'sound',
-    title: 'Ouvir e falar',
-    text: 'Sonoridade agora; vozes e IA depois.',
-    links: [
-      { href: '#/listen', title: 'Escuta guiada', description: 'Letras, palavras e frases.', chip: 'Áudio em breve' },
-      { href: '#/pronounce', title: 'Grave e ouça sua voz', description: 'Grave e reproduza a própria voz.', chip: 'Autoescuta' },
-      { href: '#/converse', title: 'Conversar', description: 'Diálogos com IA em breve.', chip: 'Em breve' },
-    ],
   },
   {
     id: 'read',
@@ -124,7 +128,7 @@ export const PRACTICE_PILLARS: readonly {
 ]
 
 export const pillarForSuggestedHref = (href: string): PracticePillarId => {
-  if (href.includes('/listen') || href.includes('/pronounce') || href.includes('/converse')) return 'sound'
+  if (href.includes('/lesson/live-') || href.includes('/listen') || href.includes('/pronounce') || href.includes('/converse')) return 'sound'
   if (href.includes('/reading') || href.includes('/cards') || href.includes('/daily') || href.includes('/errors')) return 'read'
   return 'write'
 }
