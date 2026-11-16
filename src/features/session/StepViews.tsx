@@ -6,6 +6,7 @@ import { getLetterById, getReadingById, getVocabById } from '../../data'
 import { AnswerSheet } from '../../components/AnswerSheet'
 import { ExplainPanel } from '../../components/ExplainPanel'
 import { FeedbackBanner } from '../../components/FeedbackBanner'
+import { KoreanText } from '../../components/KoreanText'
 import { MascotPrompt } from '../../components/MascotPrompt'
 import { StarIcon } from '../../components/icons'
 import { SyllableBoard } from '../../components/SyllableBoard'
@@ -41,30 +42,31 @@ export function InfoView({ step, onContinue }: ContinueViewProps<InfoStep>) {
   const isFavorite = vocab ? state.progress.favorites.includes(vocab.id) : false
 
   return (
-    <div className="step">
-      <h2 className="step__title">{step.title}</h2>
-      {step.big ? (
-        <p className="step__big" lang={languageOf(step.bigLanguage)}>
-          {step.big}
-        </p>
-      ) : null}
-      {step.caption ? <p className="step__caption">{step.caption}</p> : null}
-      {vocab?.romanization && state.profile.showRomanization ? <p className="step__romanization">{vocab.romanization}</p> : null}
-      {step.lines.map((line) => (
-        <p key={line} className="step__text">
-          {line}
-        </p>
-      ))}
-      {vocab ? (
-        <button
-          type="button"
-          className="button button--ghost"
-          aria-pressed={isFavorite}
-          onClick={() => actions.toggleFavorite(vocab.id)}
-        >
-          <StarIcon size={20} isFilled={isFavorite} /> {isFavorite ? 'Favorita' : 'Favoritar palavra'}
-        </button>
-      ) : null}
+    <div className="step step--coach">
+      <MascotPrompt
+        title={step.title}
+        pose="wave"
+        hangul={step.bigLanguage === 'ko' ? step.big : undefined}
+        romanization={vocab?.romanization}
+        speech={step.bigLanguage === 'ko' ? undefined : step.big}
+      >
+        {step.caption ? <p className="step__caption">{step.caption}</p> : null}
+        {step.lines.map((line) => (
+          <p key={line} className="step__text">
+            {line}
+          </p>
+        ))}
+        {vocab ? (
+          <button
+            type="button"
+            className="button button--ghost"
+            aria-pressed={isFavorite}
+            onClick={() => actions.toggleFavorite(vocab.id)}
+          >
+            <StarIcon size={20} isFilled={isFavorite} /> {isFavorite ? 'Favorita' : 'Favoritar palavra'}
+          </button>
+        ) : null}
+      </MascotPrompt>
       <StepFooter>
         <button type="button" className="button button--primary button--block" onClick={onContinue}>
           Continuar
@@ -155,7 +157,8 @@ export function ChoiceView({ step, onAttempt, onContinue }: GradedViewProps<Choi
       <MascotPrompt
         title={step.prompt}
         pose={outcome === 'wrong' ? 'worried' : outcome === 'correct' ? 'cheer' : 'wave'}
-        speech={step.big}
+        hangul={step.bigLanguage === 'ko' ? step.big : undefined}
+        speech={step.bigLanguage === 'ko' ? undefined : step.big}
         speechLanguage={step.bigLanguage}
       >
         {step.context ? (
@@ -197,7 +200,7 @@ export function ChoiceView({ step, onAttempt, onContinue }: GradedViewProps<Choi
               disabled={isLocked}
               onClick={() => setSelectedIndex(index)}
             >
-              {option.text}
+              {option.language === 'ko' ? <KoreanText hangul={option.text} size="sm" /> : option.text}
             </button>
           )
         })}
@@ -289,7 +292,8 @@ export function TilesView({ step, onAttempt, onContinue }: GradedViewProps<Tiles
       <MascotPrompt
         title={step.prompt}
         pose={outcome === 'wrong' ? 'worried' : outcome === 'correct' ? 'cheer' : 'confident'}
-        speech={showSpeech ? step.big : undefined}
+        hangul={showSpeech && step.bigLanguage === 'ko' ? step.big : undefined}
+        speech={showSpeech && step.bigLanguage !== 'ko' ? step.big : undefined}
         speechLanguage={step.bigLanguage}
         romanization={isJamoAssemble ? step.promptHint : undefined}
       >
@@ -554,13 +558,10 @@ export function CardView({ step, onAttempt, onContinue }: GradedViewProps<CardSt
     <div className="step">
       <h2 className="step__title">Você lembra o que significa?</h2>
       <div className="flashcard">
-        <p className="step__big" lang="ko">
-          {vocab.hangul}
-        </p>
+        <KoreanText hangul={vocab.hangul} romanization={vocab.romanization} size="lg" />
         {isRevealed ? (
           <>
             <p className="flashcard__answer">{vocab.translation}</p>
-            {vocab.romanization && state.profile.showRomanization ? <p className="step__romanization">{vocab.romanization}</p> : null}
             {vocab.note ? <p className="step__text step__text--muted">{vocab.note}</p> : null}
           </>
         ) : null}

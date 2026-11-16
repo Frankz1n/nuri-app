@@ -48,11 +48,13 @@ export const VOCABULARY: readonly VocabItem[] = [
   { id: 'vocab-hangugeo', hangul: '한국어', translation: 'língua coreana', romanization: 'hangugeo', category: 'cultura' },
   { id: 'vocab-hanguk', hangul: '한국', translation: 'Coreia do Sul', romanization: 'hanguk', category: 'cultura' },
 
-  // Alimentação (9)
+  // Alimentação (11)
   { id: 'vocab-mul', hangul: '물', translation: 'água', romanization: 'mul', category: 'alimentacao' },
   { id: 'vocab-bap', hangul: '밥', translation: 'arroz cozido / refeição', romanization: 'bap', category: 'alimentacao', note: 'Também é usado para "refeição" em geral.' },
   { id: 'vocab-kimchi', hangul: '김치', translation: 'kimchi (conserva de legumes)', romanization: 'gimchi', category: 'alimentacao' },
   { id: 'vocab-keopi', hangul: '커피', translation: 'café (bebida)', romanization: 'keopi', category: 'alimentacao' },
+  { id: 'vocab-cha', hangul: '차', translation: 'chá', romanization: 'cha', category: 'alimentacao' },
+  { id: 'vocab-ppang', hangul: '빵', translation: 'pão', romanization: 'ppang', category: 'alimentacao' },
   { id: 'vocab-uyu', hangul: '우유', translation: 'leite', romanization: 'uyu', category: 'alimentacao' },
   { id: 'vocab-gogi', hangul: '고기', translation: 'carne', romanization: 'gogi', category: 'alimentacao' },
   { id: 'vocab-gwail', hangul: '과일', translation: 'fruta', romanization: 'gwail', category: 'alimentacao' },

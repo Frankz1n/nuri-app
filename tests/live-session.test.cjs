@@ -4,7 +4,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const { loadTsModule } = require('./helpers/load-ts.cjs')
 
-const { getLessonById, getLetterById, ALL_LIVE_SITUATIONS } = loadTsModule('src/data/index.ts')
+const { getLessonById, getLetterById, ALL_LIVE_SITUATIONS, LESSONS } = loadTsModule('src/data/index.ts')
 const { findNextLesson } = loadTsModule('src/lib/catalog.ts')
 const { buildLessonSteps } = loadTsModule('src/lib/lessonPlans.ts')
 const { buildStepForErrorId } = loadTsModule('src/lib/stepBuilders.ts')
@@ -13,14 +13,16 @@ const { parseSessionDraft } = loadTsModule('src/lib/session.ts')
 const { createEmptyState } = loadTsModule('src/core/index.ts')
 const { recordListeningAnswerTransition } = loadTsModule('src/state/transitions.ts')
 
-test('a trilha entra na live e preserva o caminho para hangul após as três situações', () => {
-  const completed = []
-  for (const situation of ALL_LIVE_SITUATIONS) {
-    assert.equal(findNextLesson(completed).id, situation.id)
-    completed.push(situation.id)
-  }
-  assert.equal(findNextLesson(completed).id, 'lesson-u1-00')
-  assert.equal(findNextLesson([...completed, 'lesson-u1-00']).id, 'lesson-u1-01')
+test('a trilha começa pela fala, depois hangul, e live fica depois do núcleo escrito', () => {
+  assert.equal(findNextLesson([]).id, 'lesson-speak-01')
+  assert.equal(findNextLesson(['lesson-speak-01', 'lesson-speak-02', 'lesson-speak-03']).id, 'lesson-u1-00')
+  assert.equal(
+    findNextLesson(['lesson-speak-01', 'lesson-speak-02', 'lesson-speak-03', 'lesson-u1-00']).id,
+    'lesson-u1-01',
+  )
+
+  const untilLive = LESSONS.filter((lesson) => lesson.kind !== 'live').map((lesson) => lesson.id)
+  assert.equal(findNextLesson(untilLive).kind, 'live')
 })
 
 test('cada situação começa com áudio, tem leitura e fala, testa nova fala e termina em escrita', () => {

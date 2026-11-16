@@ -3,7 +3,7 @@ import type { Lesson, VocabItem } from '../data'
 import { sample, shuffle } from './random'
 import { buildLiveListeningStep } from './liveListening'
 import type { Random } from './random'
-import type { ChoiceStep, InfoStep, Step } from './steps'
+import type { ChoiceStep, InfoStep, Step, WordListenStep, WordRepeatStep } from './steps'
 import {
   buildAssembleDemoInfo,
   buildLetterBlockStep,
@@ -278,11 +278,52 @@ const buildReadingLessonSteps = (readingId: string): Step[] => {
   return reading ? [buildReadStep(reading.id), ...buildReadingQuestionSteps(reading)] : []
 }
 
+const buildSpeakPair = (vocabId: string): Step[] => {
+  const vocab = getVocabById(vocabId)
+  if (!vocab) return []
+  const listen: WordListenStep = {
+    kind: 'word-listen',
+    skillId: 'listening',
+    vocabId,
+    prompt: `Ouça: ${vocab.translation}`,
+  }
+  const repeat: WordRepeatStep = {
+    kind: 'word-repeat',
+    skillId: 'speaking-practice',
+    vocabId,
+    prompt: `Repita: ${vocab.translation}`,
+  }
+  return [listen, repeat]
+}
+
+const buildSpeakLessonSteps = (vocabIds: readonly string[], random: Random): Step[] => {
+  const items = vocabIds.flatMap((vocabId) => getVocabById(vocabId) ?? [])
+  if (items.length === 0) return []
+
+  const intro: InfoStep = {
+    kind: 'info',
+    skillId: 'listening',
+    title: 'Fale desde o começo',
+    lines: [
+      'Primeiro você ouve a palavra em coreano.',
+      'Depois repete em voz alta. Começamos com palavras curtas e vamos crescendo.',
+    ],
+  }
+
+  const pairs = items.flatMap((vocab) => buildSpeakPair(vocab.id))
+  const quiz = sample(items, Math.min(3, items.length), random).map((vocab) =>
+    buildVocabChoiceStep(vocab, 'ko-pt', random),
+  )
+  return [intro, ...pairs, ...quiz]
+}
+
 export const buildLessonSteps = (lesson: Lesson, random: Random): Step[] => {
   if (lesson.id === 'lesson-u1-00') return buildPilotBlocksSteps(random)
   if (lesson.id === 'lesson-u2-16') return buildPiKiDemoSteps(random)
 
   switch (lesson.kind) {
+    case 'speak':
+      return buildSpeakLessonSteps(lesson.vocabIds ?? [], random)
     case 'live': {
       const situation = getLiveSituation(lesson.id)
       if (!situation) return []

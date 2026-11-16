@@ -52,9 +52,9 @@ const buildOrientationSteps = (): ChoiceStep[] => {
   ].flatMap((step) => step ?? [])
 }
 
-const recommendUnitNumber = (hits: number): number => {
-  if (hits <= 1) return 1
-  if (hits <= 3) return 2
+const recommendUnitNumber = (hits: number, familiarity?: string): number => {
+  if (familiarity === 'Nunca vi hangul' || hits <= 1) return 0
+  if (hits <= 3) return 1
   if (hits <= 5) return 4
   return 5
 }
@@ -93,7 +93,11 @@ export function Onboarding() {
     navigateTo(hash, { replace: true })
   }
 
-  const recommendedUnit = UNITS.find((unit) => unit.number === recommendUnitNumber(orientationHits)) ?? UNITS[0]
+  const recommendedUnit =
+    UNITS.find((unit) => unit.number === recommendUnitNumber(orientationHits, familiarity)) ?? UNITS[0]
+
+  const starterHref = `#/lesson/${recommendedUnit.lessonIds[0] ?? 'lesson-speak-01'}`
+  const zeroHref = '#/lesson/lesson-speak-01'
 
   return (
     <div className="screen onboarding">
@@ -101,7 +105,7 @@ export function Onboarding() {
         <BrandMark />
         <h1 className="screen__title">Bem-vindo ao Nuri</h1>
         <p className="screen__text">
-          Aprenda a entender frases em coreano e responder em voz alta. Leia em hangul e pratique a escrita ao longo da trilha.
+          Começamos falando: você ouve palavras curtas, repete em voz alta e só depois aprofunda o hangul escrito.
         </p>
       </header>
 
@@ -199,15 +203,18 @@ export function Onboarding() {
             Por onde começar?
           </h2>
           <p className="card__text">
-            Faça uma mini orientação de 6 perguntas para sugerirmos a unidade inicial. Ou comece do início — você pode abrir qualquer
-            aula depois.
+            Se você nunca viu coreano, começamos com café, água e chá: ouvir e repetir. A orientação só ajusta o ponto de entrada.
           </p>
           <div className="stack">
             <button type="button" className="button button--secondary button--block" onClick={() => setPhase('orientation')}>
               Fazer orientação (6 perguntas)
             </button>
-            <button type="button" className="button button--primary button--block" onClick={() => finish('#/learn')}>
-              Começar do início
+            <button
+              type="button"
+              className="button button--primary button--block"
+              onClick={() => finish(familiarity === 'Nunca vi hangul' || !familiarity ? zeroHref : '#/learn')}
+            >
+              Começar do zero (falar primeiro)
             </button>
           </div>
         </section>
@@ -240,21 +247,20 @@ export function Onboarding() {
             Sugestão de início
           </h2>
           <p className="card__text">
-            Você acertou {orientationHits} de {orientationSteps.length} de primeira. Recomendamos começar pela{' '}
+            Você acertou {orientationHits} de {orientationSteps.length} de primeira. Recomendamos começar por{' '}
             <strong>
-              Unidade {recommendedUnit.number}: {recommendedUnit.title}
+              {recommendedUnit.number === 0 ? recommendedUnit.title : `Unidade ${recommendedUnit.number}: ${recommendedUnit.title}`}
             </strong>
             .
           </p>
           <div className="stack">
-            <button
-              type="button"
-              className="button button--primary button--block"
-              onClick={() => finish(`#/lesson/${recommendedUnit.lessonIds[0]}`)}
-            >
-              Começar pela unidade {recommendedUnit.number}
+            <button type="button" className="button button--primary button--block" onClick={() => finish(starterHref)}>
+              Começar por aí
             </button>
-            <button type="button" className="button button--secondary button--block" onClick={() => finish('#/learn')}>
+            <button type="button" className="button button--secondary button--block" onClick={() => finish(zeroHref)}>
+              Prefiro começar do zero
+            </button>
+            <button type="button" className="button button--ghost button--block" onClick={() => finish('#/learn')}>
               Ver todas as unidades
             </button>
           </div>
@@ -274,8 +280,8 @@ export function Onboarding() {
       </section>
 
       {phase !== 'result' ? (
-        <button type="button" className="button button--ghost button--block" onClick={() => finish('#/learn')}>
-          Pular configuração
+        <button type="button" className="button button--ghost button--block" onClick={() => finish(zeroHref)}>
+          Pular e começar do zero
         </button>
       ) : null}
     </div>

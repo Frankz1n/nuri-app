@@ -60,8 +60,7 @@ export function LiveListeningView({ step, answer, onAnswer, onContinue }: Listen
       <MascotPrompt
         title={title}
         pose={answer ? (correct ? 'cheer' : 'worried') : skippedAudio ? 'nervous' : 'confident'}
-        speech={showText || answer ? line.ko : undefined}
-        speechLanguage="ko"
+        hangul={showText || answer ? line.ko : undefined}
         audioSlot={
           skippedAudio ? undefined : (
             <LivePlayback
@@ -168,8 +167,7 @@ export function LiveDialogueView({ step, onContinue }: DialogueViewProps) {
           <MascotPrompt
             title="Leia e acompanhe a fala"
             pose="wave"
-            speech={situation.opening.ko}
-            speechLanguage="ko"
+            hangul={situation.opening.ko}
             audioSlot={<LivePlayback situation={situation} role="opening" label="Ouvir enquanto leio" />}
           >
             {situation.picture ? <LiveContextPicture picture={situation.picture} /> : null}
@@ -186,13 +184,12 @@ export function LiveDialogueView({ step, onContinue }: DialogueViewProps) {
           <LivePlayback situation={situation} role="reply" label="Ouvir a resposta" />
         </>
       ) : skippedSpeech ? (
-        <MascotPrompt title="Repita o que o Horangi disse:" pose="nervous" speech={line.ko} speechLanguage="ko" />
+        <MascotPrompt title="Repita o que o Horangi disse:" pose="nervous" hangul={line.ko} />
       ) : (
         <MascotPrompt
           title="Repita o que o Horangi disse:"
           pose="confident"
-          speech={line.ko}
-          speechLanguage="ko"
+          hangul={line.ko}
           audioSlot={<LivePlayback situation={situation} role="reply" label="Ouvir o modelo" />}
         >
           <p className="step__text">{situation.context}</p>

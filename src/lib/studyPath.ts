@@ -17,6 +17,7 @@ export interface GuidedStudyPlan {
 }
 
 const PHASE_BY_UNIT: Readonly<Record<number, { label: string; hint: string }>> = {
+  0: { label: 'Fala primeiro', hint: 'Ouça palavras curtas e repita em voz alta antes do alfabeto.' },
   1: { label: 'Letras e sons', hint: 'Agora o foco é reconhecer e escrever as vogais.' },
   2: { label: 'Letras e sons', hint: 'Consoantes entram na trilha; continue letra a letra.' },
   3: { label: 'Letras e sons', hint: 'Vogais compostas e consoantes duplas ampliam o hangul.' },
@@ -36,6 +37,11 @@ const LIVE_PRACTICE = {
 }
 
 const PRACTICE_FOR_KIND: Readonly<Record<Lesson['kind'], GuidedStudyPlan['suggestedPractice']>> = {
+  speak: {
+    href: '#/pronounce',
+    title: 'Grave e ouça',
+    reason: 'Repita as palavras novas em voz alta.',
+  },
   live: LIVE_PRACTICE,
   letter: {
     href: '#/practice/write',

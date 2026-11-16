@@ -16,7 +16,7 @@ import { useNuri } from '../../state/useNuri'
 import { getDisplayedStreak } from '../../state/transitions'
 
 const LESSON_GLYPHS: Record<Lesson['kind'], SkillGlyph> = {
-  live: 'listen', letter: 'write', review: 'review', syllable: 'blocks',
+  speak: 'speak', live: 'listen', letter: 'write', review: 'review', syllable: 'blocks',
   batchim: 'blocks', vocab: 'read', phrase: 'read', reading: 'read',
 }
 
@@ -33,7 +33,13 @@ function UnitBanner({ unit, completed, total }: { unit: Unit; completed: number;
     <section className="study-unit study-unit--horangi" aria-labelledby="study-unit-title">
       <div className="study-unit__copy">
         <p className="study-unit__category">
-          {isBts ? 'Coreano em vídeo' : isLive ? 'Escuta e fala' : `Seção 1 · Unidade ${unit.number}`}
+          {isBts
+            ? 'Coreano em vídeo'
+            : isLive
+              ? 'Escuta e fala'
+              : unit.number === 0
+                ? 'Fala primeiro'
+                : `Seção 1 · Unidade ${unit.number}`}
         </p>
         <h2 id="study-unit-title">{unit.title}</h2>
         <div className="study-unit__progress">

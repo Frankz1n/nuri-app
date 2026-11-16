@@ -3,6 +3,7 @@ import { VOCABULARY, VOCAB_CATEGORY_LABELS } from '../../data'
 import type { VocabCategory } from '../../data'
 import { AppHeader } from '../../components/AppHeader'
 import { FeedbackBanner } from '../../components/FeedbackBanner'
+import { KoreanText } from '../../components/KoreanText'
 import { StarIcon } from '../../components/icons'
 import { normalizeSearchText } from '../../lib/text'
 import { useNuri } from '../../state/useNuri'
@@ -98,9 +99,7 @@ export function Words() {
               </button>
               {isSelected ? (
                 <div className="word-item__extra" id={`word-detail-${vocab.id}`}>
-                  {vocab.romanization && state.profile.showRomanization ? (
-                    <p className="word-item__romanization">{vocab.romanization}</p>
-                  ) : null}
+                  <KoreanText hangul={vocab.hangul} romanization={vocab.romanization} size="md" />
                   {vocab.note ? <p className="word-item__note">{vocab.note}</p> : null}
                   <span className="chip">{VOCAB_CATEGORY_LABELS[vocab.category]}</span>
                 </div>

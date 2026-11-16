@@ -112,8 +112,28 @@ export interface LiveDialogueStep extends StepBase {
   situationId: string
 }
 
+/** Ouça a palavra modelo antes de avançar. */
+export interface WordListenStep extends StepBase {
+  kind: 'word-listen'
+  vocabId: string
+  prompt: string
+}
+
+/** Repita a palavra em voz alta (prática com autoescuta). */
+export interface WordRepeatStep extends StepBase {
+  kind: 'word-repeat'
+  vocabId: string
+  prompt: string
+}
+
 export type Step =
   | InfoStep | ChoiceStep | TilesStep | WriteStep | PairsStep | CardStep | ReadStep
-  | LiveListeningStep | LiveDialogueStep
+  | LiveListeningStep | LiveDialogueStep | WordListenStep | WordRepeatStep
 
-export const isGradedStep = (step: Step): boolean => step.kind !== 'info' && step.kind !== 'read' && step.kind !== 'live-read' && step.kind !== 'live-speak'
+export const isGradedStep = (step: Step): boolean =>
+  step.kind !== 'info' &&
+  step.kind !== 'read' &&
+  step.kind !== 'live-read' &&
+  step.kind !== 'live-speak' &&
+  step.kind !== 'word-listen' &&
+  step.kind !== 'word-repeat'

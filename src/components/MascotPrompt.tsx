@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { MASCOT_POSES } from '../assets/mascot/poses'
 import type { MascotPose } from '../assets/mascot/poses'
+import { KoreanText } from './KoreanText'
 
 interface MascotPromptProps {
   title: string
@@ -8,6 +9,7 @@ interface MascotPromptProps {
   speech?: ReactNode
   speechLanguage?: 'ko' | 'pt'
   romanization?: string
+  hangul?: string
   audioSlot?: ReactNode
   children?: ReactNode
 }
@@ -19,9 +21,18 @@ export function MascotPrompt({
   speech,
   speechLanguage,
   romanization,
+  hangul,
   audioSlot,
   children,
 }: MascotPromptProps) {
+  const koreanBubble = hangul ? (
+    <KoreanText hangul={hangul} romanization={romanization} size="md" />
+  ) : speechLanguage === 'ko' && typeof speech === 'string' ? (
+    <KoreanText hangul={speech} romanization={romanization} size="md" />
+  ) : speech ? (
+    <div className="mascot-prompt__speech">{speech}</div>
+  ) : null
+
   return (
     <div className="mascot-prompt">
       <h2 className="mascot-prompt__title">{title}</h2>
@@ -34,15 +45,10 @@ export function MascotPrompt({
           height={160}
           decoding="async"
         />
-        {speech || audioSlot ? (
+        {koreanBubble || audioSlot ? (
           <div className="mascot-prompt__bubble">
             {audioSlot}
-            {romanization ? <span className="mascot-prompt__roma">{romanization}</span> : null}
-            {speech ? (
-              <p className="mascot-prompt__speech" lang={speechLanguage === 'ko' ? 'ko' : undefined}>
-                {speech}
-              </p>
-            ) : null}
+            {koreanBubble}
           </div>
         ) : null}
       </div>

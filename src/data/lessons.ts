@@ -15,7 +15,40 @@ const XP_BY_KIND: Readonly<Record<LessonKind, number>> = {
   phrase: 20,
   reading: 25,
   live: 20,
+  speak: 15,
 }
+
+export const SPEAK_UNIT_ID = 'unit-0'
+
+const SPEAK_STARTER_VOCAB = ['vocab-keopi', 'vocab-mul', 'vocab-cha', 'vocab-ppang'] as const
+const SPEAK_GREETING_VOCAB = ['vocab-annyeonghaseyo', 'vocab-ne', 'vocab-gamsahamnida'] as const
+
+const SPEAK_LESSONS: Lesson[] = [
+  {
+    id: 'lesson-speak-01',
+    unitId: SPEAK_UNIT_ID,
+    title: 'Ouça e diga: café, água, chá',
+    kind: 'speak',
+    vocabIds: [...SPEAK_STARTER_VOCAB.slice(0, 3)],
+    xpReward: XP_BY_KIND.speak,
+  },
+  {
+    id: 'lesson-speak-02',
+    unitId: SPEAK_UNIT_ID,
+    title: 'Palavras do café',
+    kind: 'speak',
+    vocabIds: [...SPEAK_STARTER_VOCAB],
+    xpReward: XP_BY_KIND.speak,
+  },
+  {
+    id: 'lesson-speak-03',
+    unitId: SPEAK_UNIT_ID,
+    title: 'Primeiros cumprimentos falados',
+    kind: 'speak',
+    vocabIds: [...SPEAK_GREETING_VOCAB],
+    xpReward: XP_BY_KIND.speak,
+  },
+]
 
 const buildLessonId = (unitNumber: number, position: number): string =>
   `lesson-u${unitNumber}-${String(position).padStart(2, '0')}`
@@ -169,13 +202,7 @@ const UNIT_8_LESSONS: Lesson[] = [
 const btsIds = new Set(BTS_SITUATIONS.map((situation) => situation.id))
 
 export const LESSONS: readonly Lesson[] = [
-  ...ALL_LIVE_SITUATIONS.map((situation): Lesson => ({
-    id: situation.id,
-    unitId: btsIds.has(situation.id) ? BTS_UNIT_ID : LIVE_UNIT_ID,
-    title: situation.title,
-    kind: 'live',
-    xpReward: XP_BY_KIND.live,
-  })),
+  ...SPEAK_LESSONS,
   ...UNIT_1_LESSONS,
   ...UNIT_2_LESSONS,
   ...UNIT_3_LESSONS,
@@ -184,6 +211,13 @@ export const LESSONS: readonly Lesson[] = [
   ...UNIT_6_LESSONS,
   ...UNIT_7_LESSONS,
   ...UNIT_8_LESSONS,
+  ...ALL_LIVE_SITUATIONS.map((situation): Lesson => ({
+    id: situation.id,
+    unitId: btsIds.has(situation.id) ? BTS_UNIT_ID : LIVE_UNIT_ID,
+    title: situation.title,
+    kind: 'live',
+    xpReward: XP_BY_KIND.live,
+  })),
 ]
 
 const collectLessonIds = (unitId: string): string[] =>
@@ -195,8 +229,13 @@ const defineUnit = (number: number, title: string, description: string): Unit =>
 }
 
 export const UNITS: readonly Unit[] = [
-  defineUnit(9, 'A live começou', 'Ouça uma expressão, acompanhe o hangul e responda em voz alta.'),
-  ...(BTS_SITUATIONS.length ? [defineUnit(10, 'Trechos do BTS', 'Entenda expressões em falas reais e pratique suas respostas.')] : []),
+  {
+    id: SPEAK_UNIT_ID,
+    number: 0,
+    title: 'Fale desde o começo',
+    description: 'Ouça palavras curtas do café, repita em voz alta e ganhe confiança na pronúncia.',
+    lessonIds: SPEAK_LESSONS.map((lesson) => lesson.id),
+  },
   defineUnit(1, 'Primeiros blocos', 'Comece com ㄱ, ㄴ e ㅏ; monte 가 e 나. Depois siga as vogais.'),
   defineUnit(2, 'Novas conexões', 'Consoantes básicas, revisão e a sequência ㅣ → 피 → 키.'),
   defineUnit(3, 'Ampliando o hangul', 'Domine as vogais compostas e as consoantes duplas.'),
@@ -205,6 +244,8 @@ export const UNITS: readonly Unit[] = [
   defineUnit(6, 'No seu dia a dia', 'Vocabulário de objetos, comida e números do cotidiano.'),
   defineUnit(7, 'Seu mundo em coreano', 'Palavras de K-pop, dramas, viagem e tempo.'),
   defineUnit(8, 'Além das palavras', 'Monte frases e leia pequenos textos em coreano.'),
+  defineUnit(9, 'A live começou', 'Ouça uma expressão, acompanhe o hangul e responda em voz alta.'),
+  ...(BTS_SITUATIONS.length ? [defineUnit(10, 'Trechos do BTS', 'Entenda expressões em falas reais e pratique suas respostas.')] : []),
 ]
 
 export const getLessonById = (lessonId: string): Lesson | undefined =>

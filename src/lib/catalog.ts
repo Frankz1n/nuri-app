@@ -23,7 +23,7 @@ export const summarizeUnit = (unit: Unit, completedLessons: readonly string[]): 
   total: unit.lessonIds.length,
 })
 
-// O catálogo está na ordem da trilha e preserva os IDs concluídos das versões anteriores.
+/** Ordem da trilha: fala primeiro → hangul → live. Preserva IDs antigos já concluídos. */
 export const findNextLesson = (completedLessons: readonly string[]): Lesson | undefined =>
   LESSONS.find((lesson) => !completedLessons.includes(lesson.id))
 
@@ -41,6 +41,7 @@ export const LESSON_KIND_LABELS: Readonly<Record<Lesson['kind'], string>> = {
   phrase: 'Frases',
   reading: 'Leitura',
   live: 'Escuta e fala',
+  speak: 'Ouvir e falar',
 }
 
 export const getLettersUnlockedByProgress = (completedLessons: readonly string[]): Letter[] => {

@@ -6,6 +6,7 @@ import type { ListeningAnswer, SessionDraftPayload } from '../../lib/session'
 import type { Step } from '../../lib/steps'
 import { useNuri } from '../../state/useNuri'
 import { LiveDialogueView, LiveListeningView } from './LiveViews'
+import { WordListenView, WordRepeatView } from './SpeakViews'
 import { CardView, ChoiceView, InfoView, PairsView, ReadView, TilesView, WriteView } from './StepViews'
 
 const STEP_ACTIVITY: Record<Step['kind'], { glyph: SkillGlyph; label: string }> = {
@@ -19,6 +20,8 @@ const STEP_ACTIVITY: Record<Step['kind'], { glyph: SkillGlyph; label: string }> 
   'live-listen': { glyph: 'listen', label: 'Escuta' },
   'live-read': { glyph: 'read', label: 'Leitura' },
   'live-speak': { glyph: 'speak', label: 'Fala' },
+  'word-listen': { glyph: 'listen', label: 'Ouvir' },
+  'word-repeat': { glyph: 'speak', label: 'Repetir' },
 }
 
 export interface SessionSummary {
@@ -85,6 +88,10 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
       case 'live-read':
       case 'live-speak':
         return <LiveDialogueView step={step} onContinue={handleContinue} />
+      case 'word-listen':
+        return <WordListenView step={step} onContinue={handleContinue} />
+      case 'word-repeat':
+        return <WordRepeatView step={step} onContinue={handleContinue} />
       case 'info':
         return <InfoView step={step} onContinue={handleContinue} />
       case 'read':

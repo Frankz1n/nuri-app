@@ -2831,3 +2831,95 @@ html.dark .streak-celebrate__week {
 html.dark .answer-sheet__mark {
   -webkit-text-fill-color: #14231c;
 }
+
+/* ===== Hangul + romanização + ouvir ===== */
+.korean-text {
+  display: grid;
+  justify-items: start;
+  gap: 0.15rem;
+}
+
+.korean-text--sm .korean-text__hangul {
+  font-size: 1.15rem;
+}
+
+.korean-text--md .korean-text__hangul {
+  font-size: 1.45rem;
+}
+
+.korean-text--lg .korean-text__hangul {
+  font-size: clamp(2rem, 9vw, 2.75rem);
+}
+
+.korean-text__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.korean-text__listen {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.korean-text__listen.is-playing,
+.korean-text__listen[aria-disabled='true'] {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.korean-text__hangul {
+  font-family: var(--font-korean);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.korean-text__roma {
+  margin-left: 2.55rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.korean-text--sm .korean-text__roma {
+  margin-left: 2.4rem;
+  font-size: 0.75rem;
+}
+
+.korean-text__hint {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.choice--korean {
+  justify-content: flex-start;
+}
+
+.choice--korean .korean-text__roma {
+  margin-left: 2.4rem;
+}
+
+.flashcard .korean-text {
+  justify-items: center;
+  width: 100%;
+}
+
+.flashcard .korean-text__roma {
+  margin-left: 0;
+  text-align: center;
+}
+
+.mascot-prompt__bubble .korean-text__roma {
+  margin-left: 2.55rem;
+}

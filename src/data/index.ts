@@ -11,9 +11,9 @@ export * from './liveMedia'
 export { LESSONS, UNITS, getLessonById, getUnitById } from './lessons'
 
 export const CATALOG_STATS = {
-  lessons: 61 + BTS_SITUATIONS.length,
-  units: 9 + Number(BTS_SITUATIONS.length > 0),
+  lessons: 64 + BTS_SITUATIONS.length,
+  units: 10 + Number(BTS_SITUATIONS.length > 0),
   letters: 40,
-  vocabulary: 70,
+  vocabulary: 72,
   readings: 3,
 } as const
