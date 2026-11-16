@@ -151,7 +151,7 @@ export function Profile() {
         </h2>
         <ToggleRow
           label="Mostrar romanização"
-          description="Exibe a pronúncia em letras latinas junto das palavras."
+          description="Mostra a escrita em letras latinas junto das palavras."
           isChecked={profile.showRomanization}
           onChange={(isChecked) => actions.setProfile({ showRomanization: isChecked })}
         />

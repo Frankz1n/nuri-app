@@ -52,7 +52,7 @@ function LetterDetail({ letterId }: { letterId: string }) {
         <p className="step__caption">
           Exemplo: <span lang="ko">{letter.example.hangul}</span> — {letter.example.translation}
         </p>
-        <p className="screen__text">Som: {letter.romanization}</p>
+        <p className="screen__text">Romanização: {letter.romanization}</p>
         {lesson ? (
           <a className="button button--secondary button--block" href={`#/lesson/${lesson.id}`}>
             Ir para a aula desta letra
@@ -153,7 +153,7 @@ export function Alphabet({ letterId }: { letterId?: string }) {
       <ul className="letter-grid">
         {visibleLetters.map((letter) => (
           <li key={letter.id}>
-            <a className="letter-tile" href={`#/alphabet/${letter.id}`} aria-label={`Letra ${letter.name}, som ${letter.romanization}`}>
+            <a className={`letter-tile letter-tile--${letter.group.startsWith('vowel') ? 'vowel' : 'consonant'}`} href={`#/alphabet/${letter.id}`} aria-label={`Letra ${letter.name}, romanização ${letter.romanization}`}>
               <span className="letter-tile__char" lang="ko">
                 {letter.char}
               </span>

@@ -1,188 +1,86 @@
 import { useState } from 'react'
 import { dailyXpAmount, getDueCards, todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
+import { ChevronIcon, SkillIcon } from '../../components/icons'
+import type { SkillGlyph } from '../../components/icons'
 import { PRACTICE_MODES } from '../../lib/practicePlans'
 import type { PracticeMode } from '../../lib/session'
 import { describeOrigin, originRoute, parseSessionDraft } from '../../lib/session'
-import {
-  PRACTICE_PILLARS,
-  buildGuidedStudyPlan,
-  pillarForSuggestedHref,
-  type PracticePillarId,
-} from '../../lib/studyPath'
+import { PRACTICE_PILLARS } from '../../lib/studyPath'
+import type { PracticePillarId } from '../../lib/studyPath'
 import { useNuri } from '../../state/useNuri'
 
-function ModeList({
-  modes,
-  today,
-  dueCount,
-  errorCount,
-  dailyXpAwards,
-}: {
-  modes: readonly PracticeMode[]
-  today: string
-  dueCount: number
-  errorCount: number
-  dailyXpAwards: Record<string, string>
-}) {
-  return (
-    <ul className="practice-list">
-      {modes.map((modeId) => {
-        const mode = PRACTICE_MODES.find((item) => item.id === modeId)
-        if (!mode) return null
-        const hasReward = mode.rewardKey !== undefined
-        const isRewardClaimed = mode.rewardKey !== undefined && dailyXpAwards[mode.rewardKey] === today
-        const badge = !hasReward
-          ? null
-          : isRewardClaimed
-            ? 'XP de hoje ok'
-            : `+${dailyXpAmount(mode.rewardKey ?? '')} XP`
-        const extra =
-          mode.id === 'cards' && dueCount > 0
-            ? `${dueCount} hoje`
-            : mode.id === 'errors' && errorCount > 0
-              ? `${errorCount} erros`
-              : null
-        return (
-          <li key={mode.id}>
-            <a className="practice-item" href={`#/practice/${mode.id}`}>
-              <span className="practice-item__text">
-                <span className="practice-item__title">{mode.title}</span>
-                <span className="practice-item__description">{mode.description}</span>
-                {badge || extra ? (
-                  <span className="practice-item__badges">
-                    {extra ? <span className="chip chip--accent">{extra}</span> : null}
-                    {badge ? <span className={`chip${isRewardClaimed ? ' chip--done' : ''}`}>{badge}</span> : null}
-                  </span>
-                ) : null}
-              </span>
-            </a>
-          </li>
-        )
-      })}
-    </ul>
-  )
+const PILLAR_GLYPHS: Record<PracticePillarId, SkillGlyph> = { sound: 'listen', write: 'write', read: 'read' }
+const MODE_GLYPHS: Record<PracticeMode, SkillGlyph> = {
+  write: 'write', syllables: 'blocks', pairs: 'blocks', cards: 'review', daily: 'review',
+  phrases: 'read', reading: 'read', blocks: 'blocks', errors: 'review',
 }
 
 export function PracticeHome() {
-  const { state, actions } = useNuri()
+  const { state } = useNuri()
   const today = todayKey()
   const draft = parseSessionDraft(state.activityDraft)
-  const dueCount = getDueCards(state.progress.reviewCards, today).length
-  const errorCount = state.progress.errorQueue.length
-  const hasReviewWork = dueCount > 0 || errorCount > 0
-  const plan = buildGuidedStudyPlan(state.progress.completedLessons)
-  const [openPillar, setOpenPillar] = useState<PracticePillarId | null>(() =>
-    pillarForSuggestedHref(plan.suggestedPractice.href),
-  )
+  const pending = getDueCards(state.progress.reviewCards, today).length + state.progress.errorQueue.length
+  const [selected, setSelected] = useState<PracticePillarId>('sound')
+  const pillar = PRACTICE_PILLARS.find((item) => item.id === selected) ?? PRACTICE_PILLARS[0]
+  const actions = pillar.links?.map((item) => ({
+    href: item.href, title: item.title, description: item.description,
+    glyph: 'listen' as const, detail: item.chip,
+  })) ?? PRACTICE_MODES.filter((mode) => pillar.modes?.includes(mode.id)).map((mode) => ({
+    href: `#/practice/${mode.id}`,
+    title: mode.title,
+    description: mode.description,
+    glyph: MODE_GLYPHS[mode.id],
+    detail: mode.rewardKey && state.progress.dailyXpAwards[mode.rewardKey] !== today
+      ? `+${dailyXpAmount(mode.rewardKey)} XP` : undefined,
+  }))
 
   return (
-    <div className="screen screen--guided">
-      <AppHeader title="Praticar" subtitle="Ouça e responda, ou treine leitura e escrita." />
+    <div className="screen screen--study">
+      <AppHeader title="Praticar" />
+      {draft ? (
+        <a className="study-quick" href={originRoute(draft.origin)}>
+          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
+          <span><strong>Continuar atividade</strong><small>{describeOrigin(draft.origin)} · passo {draft.index + 1}</small></span>
+          <ChevronIcon size={19} />
+        </a>
+      ) : null}
+      <div className="practice-picker" role="group" aria-label="Escolha uma habilidade">
+        {PRACTICE_PILLARS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`practice-category practice-category--${item.id}`}
+            aria-pressed={selected === item.id}
+            onClick={() => setSelected(item.id)}
+          >
+            <SkillIcon kind={PILLAR_GLYPHS[item.id]} size={26} />
+            <strong>{item.title}</strong>
+          </button>
+        ))}
+      </div>
 
-      {hasReviewWork ? (
-        <a className="path-review" href="#/review">
-          <span className="path-review__label">Revisar agora</span>
-          <span className="path-review__meta">
-            {dueCount > 0 ? `${dueCount} cartões` : null}
-            {dueCount > 0 && errorCount > 0 ? ' · ' : null}
-            {errorCount > 0 ? `${errorCount} erros` : null}
-          </span>
+      {pending > 0 ? (
+        <a className="study-quick study-quick--coral" href="#/review">
+          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
+          <span><strong>Revisar agora</strong><small>{pending} {pending === 1 ? 'item pendente' : 'itens pendentes'}</small></span>
+          <ChevronIcon size={19} />
         </a>
       ) : null}
 
-      {draft ? (
-        <section className="path-hero" aria-labelledby="continue-practice">
-          <h2 id="continue-practice" className="path-hero__title">
-            Continuar exercício
-          </h2>
-          <p className="path-hero__meta">
-            {describeOrigin(draft.origin)} — passo {draft.index + 1} de {draft.steps.length}
-          </p>
-          <div className="path-hero__actions">
-            <a className="button button--primary button--block" href={originRoute(draft.origin)}>
-              Continuar
-            </a>
-            <button type="button" className="button button--ghost button--block" onClick={actions.clearDraft}>
-              Descartar
-            </button>
-          </div>
-        </section>
-      ) : (
-        <section className="path-hero" aria-labelledby="suggest-title">
-          <p className="path-hero__unit">Sugestão de hoje</p>
-          <h2 id="suggest-title" className="path-hero__title">
-            {plan.suggestedPractice.title}
-          </h2>
-          <p className="path-hero__meta">{plan.suggestedPractice.reason}</p>
-          <div className="path-hero__actions">
-            <a className="button button--primary button--block" href={plan.suggestedPractice.href}>
-              Praticar isso
-            </a>
-          </div>
-        </section>
-      )}
-
-      <section aria-labelledby="pillars-title">
-        <h2 id="pillars-title" className="section-title">
-          Modalidades
-        </h2>
-        <div className="pillar-accordion">
-          {PRACTICE_PILLARS.map((pillar) => {
-            const isOpen = openPillar === pillar.id
-            return (
-              <section key={pillar.id} className={`pillar-panel${isOpen ? ' is-open' : ''}`}>
-                <button
-                  type="button"
-                  className="pillar-panel__toggle"
-                  aria-expanded={isOpen}
-                  onClick={() => setOpenPillar(isOpen ? null : pillar.id)}
-                >
-                  <span>
-                    <span className="pillar-panel__title">{pillar.title}</span>
-                    <span className="pillar-panel__text">{pillar.text}</span>
-                  </span>
-                  <span className="pillar-panel__chevron" aria-hidden="true">
-                    {isOpen ? '−' : '+'}
-                  </span>
-                </button>
-
-                {isOpen ? (
-                  <div className="pillar-panel__body">
-                    {pillar.modes ? (
-                      <ModeList
-                        modes={pillar.modes}
-                        today={today}
-                        dueCount={dueCount}
-                        errorCount={errorCount}
-                        dailyXpAwards={state.progress.dailyXpAwards}
-                      />
-                    ) : null}
-                    {pillar.links ? (
-                      <ul className="practice-list">
-                        {pillar.links.map((item) => (
-                          <li key={item.href}>
-                            <a className="practice-item" href={item.href}>
-                              <span className="practice-item__text">
-                                <span className="practice-item__title">{item.title}</span>
-                                <span className="practice-item__description">{item.description}</span>
-                                {item.chip ? (
-                                  <span className="practice-item__badges">
-                                    <span className="chip">{item.chip}</span>
-                                  </span>
-                                ) : null}
-                              </span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                ) : null}
-              </section>
-            )
-          })}
-        </div>
+      <section className="practice-work" aria-labelledby="practice-work-title">
+        <h2 id="practice-work-title">{pillar.title}</h2>
+        <ul className="practice-list">
+          {actions.map((action) => (
+            <li key={action.href}>
+              <a className={`study-quick practice-activity practice-activity--${selected}`} href={action.href}>
+                <span className="study-quick__symbol"><SkillIcon kind={action.glyph} size={22} /></span>
+                <span><strong>{action.title}</strong><small>{action.description}</small></span>
+                {action.detail ? <span className="practice-activity__detail">{action.detail}</span> : <ChevronIcon size={19} />}
+              </a>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   )

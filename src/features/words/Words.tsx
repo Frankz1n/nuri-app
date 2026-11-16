@@ -17,7 +17,6 @@ export function Words() {
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { favorites } = state.progress
-  const selectedVocab = VOCABULARY.find((vocab) => vocab.id === selectedId) ?? null
 
   const normalizedQuery = normalizeSearchText(query)
   const visibleWords = VOCABULARY.filter((vocab) => {
@@ -34,7 +33,7 @@ export function Words() {
   ]
 
   return (
-    <div className="screen">
+    <div className="screen screen--study">
       <AppHeader title="Palavras" subtitle="Hangul, tradução e favoritos para revisão." />
 
       <div className="toolbar-compact">
@@ -70,36 +69,23 @@ export function Words() {
         {visibleWords.length} {visibleWords.length === 1 ? 'palavra' : 'palavras'}
       </p>
 
-      {selectedVocab ? (
-        <section className="path-hero" aria-labelledby="word-detail-title">
-          <h2 id="word-detail-title" className="path-hero__title" lang="ko">
-            {selectedVocab.hangul}
-          </h2>
-          <p className="path-hero__meta">{selectedVocab.translation}</p>
-          {selectedVocab.romanization && state.profile.showRomanization ? (
-            <p className="field__hint">{selectedVocab.romanization}</p>
-          ) : null}
-          {selectedVocab.note ? <p className="field__hint">{selectedVocab.note}</p> : null}
-          <p className="field__hint">Áudio de referência em breve.</p>
-        </section>
-      ) : null}
-
       <ul className="word-list">
         {visibleWords.map((vocab) => {
           const isFavorite = favorites.includes(vocab.id)
           const isSelected = selectedId === vocab.id
           return (
             <li key={vocab.id} className={`word-item${isSelected ? ' is-selected' : ''}`}>
-              <button type="button" className="word-item__text word-item__select" onClick={() => setSelectedId(vocab.id)}>
+              <button
+                type="button"
+                className="word-item__text word-item__select"
+                aria-expanded={isSelected}
+                aria-controls={isSelected ? `word-detail-${vocab.id}` : undefined}
+                onClick={() => setSelectedId(isSelected ? null : vocab.id)}
+              >
                 <span className="word-item__hangul" lang="ko">
                   {vocab.hangul}
                 </span>
                 <span className="word-item__translation">{vocab.translation}</span>
-                {vocab.romanization && state.profile.showRomanization ? (
-                  <span className="word-item__romanization">{vocab.romanization}</span>
-                ) : null}
-                {vocab.note ? <span className="word-item__note">{vocab.note}</span> : null}
-                <span className="chip">{VOCAB_CATEGORY_LABELS[vocab.category]}</span>
               </button>
               <button
                 type="button"
@@ -110,6 +96,15 @@ export function Words() {
               >
                 <StarIcon isFilled={isFavorite} />
               </button>
+              {isSelected ? (
+                <div className="word-item__extra" id={`word-detail-${vocab.id}`}>
+                  {vocab.romanization && state.profile.showRomanization ? (
+                    <p className="word-item__romanization">{vocab.romanization}</p>
+                  ) : null}
+                  {vocab.note ? <p className="word-item__note">{vocab.note}</p> : null}
+                  <span className="chip">{VOCAB_CATEGORY_LABELS[vocab.category]}</span>
+                </div>
+              ) : null}
             </li>
           )
         })}
