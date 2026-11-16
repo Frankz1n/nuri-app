@@ -94,3 +94,22 @@ export const FlameIcon = (props: IconProps) => (
     <path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9Z" />
   </BaseIcon>
 )
+
+export type SkillGlyph = 'listen' | 'speak' | 'read' | 'write' | 'blocks' | 'review' | 'video'
+
+export function SkillIcon({ kind, size }: IconProps & { kind: SkillGlyph }) {
+  const marks: Record<SkillGlyph, ReactNode> = {
+    listen: <><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="4" y="12" width="4" height="7" rx="1.5" /><rect x="16" y="12" width="4" height="7" rx="1.5" /></>,
+    speak: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11v1a6.5 6.5 0 0 0 13 0v-1M12 18.5V22m-3 0h6" /></>,
+    read: <><path d="M12 6.5c-2-2-5-2.5-9-2v14c4-.5 7 0 9 2 2-2 5-2.5 9-2v-14c-4-.5-7 0-9 2Zm0 0v14" /></>,
+    write: <><path d="m5 16-1 4 4-1L20 7l-3-3L5 16Zm10-10 3 3M12 21h9" /></>,
+    blocks: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" /><path d="M15 5h4m-2-2v4M5 17h4" /></>,
+    review: <><path d="M5 8a8 8 0 1 1-.7 6M5 8V3m0 5h5" /></>,
+    video: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m10 9 5 3-5 3V9Z" /></>,
+  }
+  return <BaseIcon size={size}>{marks[kind]}</BaseIcon>
+}
+
+export const ChevronIcon = (props: IconProps) => (
+  <BaseIcon {...props}><path d="m9 5 7 7-7 7" /></BaseIcon>
+)
