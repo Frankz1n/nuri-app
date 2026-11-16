@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import horangi from '../../assets/mascot/horangi.webp'
 import { BTS_SITUATIONS, BTS_UNIT_ID, LIVE_UNIT_ID, UNITS } from '../../data'
 import type { Lesson, Unit } from '../../data'
 import { getDueCards, todayKey } from '../../core'
@@ -29,7 +30,7 @@ function UnitBanner({ unit, completed, total }: { unit: Unit; completed: number;
   const isBts = unit.id === BTS_UNIT_ID
   const isLive = unit.id === LIVE_UNIT_ID
   return (
-    <section className="study-unit" aria-labelledby="study-unit-title">
+    <section className={isLive ? 'study-unit study-unit--horangi' : 'study-unit'} aria-labelledby="study-unit-title">
       <div className="study-unit__copy">
         <p className="study-unit__category">{isBts ? 'Coreano em vídeo' : isLive ? 'Escuta e fala' : `Unidade ${unit.number}`}</p>
         <h2 id="study-unit-title">{unit.title}</h2>
@@ -38,10 +39,14 @@ function UnitBanner({ unit, completed, total }: { unit: Unit; completed: number;
           <span aria-hidden="true">{completed}/{total}</span>
         </div>
       </div>
-      <div className="study-unit__art" aria-hidden="true">
-        <span className="study-unit__glyph"><SkillIcon kind={isBts ? 'video' : isLive ? 'listen' : 'blocks'} size={30} /></span>
-        <span className="study-unit__hangul" lang="ko">{isBts || isLive ? '말' : '한'}</span>
-      </div>
+      {isLive ? (
+        <img className="study-unit__mascot" src={horangi} alt="" width={320} height={320} />
+      ) : (
+        <div className="study-unit__art" aria-hidden="true">
+          <span className="study-unit__glyph"><SkillIcon kind={isBts ? 'video' : 'blocks'} size={30} /></span>
+          <span className="study-unit__hangul" lang="ko">{isBts ? '말' : '한'}</span>
+        </div>
+      )}
     </section>
   )
 }
