@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { AnswerSheet } from '../../components/AnswerSheet'
+import { ExplainPanel } from '../../components/ExplainPanel'
 import { FeedbackBanner } from '../../components/FeedbackBanner'
+import { MascotPrompt } from '../../components/MascotPrompt'
 import { getLiveSituation } from '../../data/live'
 import type { ListeningAnswer } from '../../lib/session'
 import type { LiveDialogueStep, LiveListeningStep } from '../../lib/steps'
@@ -17,28 +20,68 @@ export function LiveListeningView({ step, answer, onAnswer, onContinue }: Listen
   const [heard, setHeard] = useState(false)
   const [showText, setShowText] = useState(false)
   const [selected, setSelected] = useState<number | null>(null)
+  const [isExplainOpen, setIsExplainOpen] = useState(false)
+  const [skippedAudio, setSkippedAudio] = useState(false)
   const situation = getLiveSituation(step.situationId)
-  if (!situation) return <button type="button" className="button" onClick={onContinue}>Continuar</button>
+  if (!situation) {
+    return (
+      <button type="button" className="button" onClick={onContinue}>
+        Continuar
+      </button>
+    )
+  }
 
   const line = situation[step.take]
   const correct = answer?.option === step.answerIndex
-  const title = step.take === 'transfer'
-    ? 'Reconheça em outra fala'
-    : line.video ? 'Assista e escolha o sentido' : 'Ouça e escolha o sentido'
+  const title =
+    step.take === 'transfer'
+      ? 'Toque no que escutar:'
+      : line.video
+        ? 'Assista e escolha o sentido'
+        : 'Toque no que escutar:'
+
+  if (isExplainOpen) {
+    return (
+      <ExplainPanel
+        prompt={line.ko}
+        promptLanguage="ko"
+        explanation={`${line.pt}. ${situation.context}`}
+        onClose={() => setIsExplainOpen(false)}
+        onContinue={() => {
+          setIsExplainOpen(false)
+          onContinue()
+        }}
+      />
+    )
+  }
 
   return (
-    <div className="step live-step">
-      <h2 className="step__title">{title}</h2>
-      <p className="step__text">{step.take === 'opening' ? situation.context : 'Escute uma nova versão da expressão.'}</p>
-      <LivePlayback situation={situation} role={step.take} label={heard || answer?.unaided ? 'Ouvir de novo' : 'Ouvir em coreano'} onHeard={() => setHeard(true)} />
-      {!answer && !showText ? (
-        <button type="button" className="button button--ghost" onClick={() => setShowText(true)}>Ver frase em hangul</button>
-      ) : null}
-      {showText || answer ? (
-        <p className="live-line" lang="ko">{line.ko}</p>
-      ) : null}
-      {showText && !answer ? <p className="field__hint">Esta tentativa é com apoio de leitura.</p> : null}
-      {heard || showText || answer ? (
+    <div className={`step live-step step--coach${answer ? (correct ? ' step--correct' : ' step--wrong') : ''}`}>
+      <MascotPrompt
+        title={title}
+        pose={answer ? (correct ? 'cheer' : 'worried') : skippedAudio ? 'nervous' : 'confident'}
+        speech={showText || answer ? line.ko : undefined}
+        speechLanguage="ko"
+        audioSlot={
+          skippedAudio ? undefined : (
+            <LivePlayback
+              situation={situation}
+              role={step.take}
+              label={heard || answer?.unaided ? 'Ouvir de novo' : 'Ouvir'}
+              onHeard={() => setHeard(true)}
+            />
+          )
+        }
+      >
+        {!answer && !showText && !skippedAudio ? (
+          <button type="button" className="button button--ghost" onClick={() => setShowText(true)}>
+            Ver frase em hangul
+          </button>
+        ) : null}
+        {showText && !answer ? <p className="field__hint">Esta tentativa é com apoio de leitura.</p> : null}
+      </MascotPrompt>
+
+      {heard || showText || answer || skippedAudio ? (
         <div className="live-options" role="group" aria-label="O que a frase significa?">
           {step.options.map((option, index) => (
             <button
@@ -54,25 +97,44 @@ export function LiveListeningView({ step, answer, onAnswer, onContinue }: Listen
           ))}
         </div>
       ) : null}
+
       <div className="step-footer">
         {answer ? (
-          <>
-            <FeedbackBanner tone={correct ? 'success' : 'info'} title={correct ? 'Isso mesmo!' : 'Confira o sentido'}>
-              {line.pt} {!answer.unaided ? 'Prática com apoio de leitura.' : ''}
-            </FeedbackBanner>
-            <button type="button" className="button button--primary button--block" onClick={onContinue}>Continuar</button>
-          </>
+          <AnswerSheet
+            tone={correct ? 'correct' : 'wrong'}
+            title={correct ? 'Isso mesmo!' : 'Confira o sentido'}
+            detail={
+              <>
+                {line.pt}
+                {!answer.unaided ? ' Prática com apoio de leitura.' : ''}
+              </>
+            }
+            onExplain={() => setIsExplainOpen(true)}
+            primaryLabel="Continuar"
+            onPrimary={onContinue}
+          />
         ) : (
-          <button
-            type="button"
-            className="button button--primary button--block"
-            disabled={selected === null}
-            onClick={() => {
-              if (selected !== null) onAnswer({ option: selected, unaided: heard && !showText })
-            }}
-          >
-            Conferir
-          </button>
+          <>
+            {!skippedAudio ? (
+              <button type="button" className="button button--ghost" onClick={() => setSkippedAudio(true)}>
+                Não posso ouvir agora
+              </button>
+            ) : (
+              <FeedbackBanner tone="info" title="Vamos pular o áudio deste passo.">
+                Você ainda pode responder pela leitura.
+              </FeedbackBanner>
+            )}
+            <button
+              type="button"
+              className="button button--primary button--block"
+              disabled={selected === null}
+              onClick={() => {
+                if (selected !== null) onAnswer({ option: selected, unaided: heard && !showText && !skippedAudio })
+              }}
+            >
+              Verificar
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -86,50 +148,92 @@ interface DialogueViewProps {
 
 export function LiveDialogueView({ step, onContinue }: DialogueViewProps) {
   const [showModel, setShowModel] = useState(false)
+  const [skippedSpeech, setSkippedSpeech] = useState(false)
   const situation = getLiveSituation(step.situationId)
-  if (!situation) return <button type="button" className="button" onClick={onContinue}>Continuar</button>
+  if (!situation) {
+    return (
+      <button type="button" className="button" onClick={onContinue}>
+        Continuar
+      </button>
+    )
+  }
 
   const isReading = step.kind === 'live-read'
+  const line = isReading ? situation.opening : situation.reply
+
   return (
-    <div className="step live-step">
-      <h2 className="step__title">{isReading ? 'Leia e acompanhe a fala' : 'Responda em voz alta'}</h2>
+    <div className="step live-step step--coach">
       {isReading ? (
         <>
-          {situation.picture ? <LiveContextPicture picture={situation.picture} /> : null}
-          <div className="live-dialogue">
-            <p className="live-line" lang="ko">{situation.opening.ko}</p>
-            <p>{situation.opening.pt}</p>
-          </div>
-          <LivePlayback situation={situation} role="opening" label="Ouvir enquanto leio" />
-          <p>Procure <strong lang="ko">{situation.focus}</strong> dentro da frase.</p>
+          <MascotPrompt
+            title="Leia e acompanhe a fala"
+            pose="wave"
+            speech={situation.opening.ko}
+            speechLanguage="ko"
+            audioSlot={<LivePlayback situation={situation} role="opening" label="Ouvir enquanto leio" />}
+          >
+            {situation.picture ? <LiveContextPicture picture={situation.picture} /> : null}
+            <p>
+              Procure <strong lang="ko">{situation.focus}</strong> dentro da frase.
+            </p>
+          </MascotPrompt>
           <div className="live-dialogue live-dialogue--reply">
-            <p className="live-line" lang="ko">{situation.reply.ko}</p>
+            <p className="live-line" lang="ko">
+              {situation.reply.ko}
+            </p>
             <p>{situation.reply.pt}</p>
           </div>
           <LivePlayback situation={situation} role="reply" label="Ouvir a resposta" />
         </>
+      ) : skippedSpeech ? (
+        <MascotPrompt title="Repita o que o Horangi disse:" pose="nervous" speech={line.ko} speechLanguage="ko" />
       ) : (
-        <>
-          <p className="step__text">Ouça a fala da live e responda em coreano. {situation.context}</p>
-          <LivePlayback situation={situation} role="opening" label="Ouvir a fala da live" />
+        <MascotPrompt
+          title="Repita o que o Horangi disse:"
+          pose="confident"
+          speech={line.ko}
+          speechLanguage="ko"
+          audioSlot={<LivePlayback situation={situation} role="reply" label="Ouvir o modelo" />}
+        >
+          <p className="step__text">{situation.context}</p>
           <VoiceRecorder practiceMode />
           {showModel ? (
-            <>
-              <div className="live-dialogue live-dialogue--reply">
-                <p className="live-line" lang="ko">{situation.reply.ko}</p>
-                <p>{situation.reply.pt}</p>
-              </div>
-              <LivePlayback situation={situation} role="reply" label="Ouvir o modelo" />
-            </>
+            <div className="live-dialogue live-dialogue--reply">
+              <p className="live-line" lang="ko">
+                {situation.reply.ko}
+              </p>
+              <p>{situation.reply.pt}</p>
+            </div>
           ) : (
-            <button type="button" className="button button--secondary" onClick={() => setShowModel(true)}>Ver resposta modelo</button>
+            <button type="button" className="button button--secondary" onClick={() => setShowModel(true)}>
+              Ver resposta modelo
+            </button>
           )}
-        </>
+        </MascotPrompt>
       )}
+
       <div className="step-footer">
-        <button type="button" className="button button--primary button--block" onClick={onContinue}>
-          {isReading ? 'Agora vou responder' : 'Continuar'}
-        </button>
+        {skippedSpeech && !isReading ? (
+          <AnswerSheet
+            tone="skip"
+            title="Vamos pular os exercícios de fala desta lição."
+            secondaryLabel="Desfazer"
+            onSecondary={() => setSkippedSpeech(false)}
+            primaryLabel="Continuar"
+            onPrimary={onContinue}
+          />
+        ) : (
+          <>
+            {!isReading ? (
+              <button type="button" className="button button--ghost" onClick={() => setSkippedSpeech(true)}>
+                Não posso falar agora
+              </button>
+            ) : null}
+            <button type="button" className="button button--primary button--block" onClick={onContinue}>
+              {isReading ? 'Agora vou responder' : 'Continuar'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

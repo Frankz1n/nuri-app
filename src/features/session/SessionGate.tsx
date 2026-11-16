@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { FeedbackBanner } from '../../components/FeedbackBanner'
+import { FinishCelebration } from '../../components/FinishCelebration'
+import { StreakCelebrate } from '../../components/StreakCelebrate'
+import { todayKey } from '../../core'
 import { createSessionId } from '../../lib/random'
 import { SESSION_DRAFT_TYPE, describeOrigin, isSameOrigin, originRoute, parseSessionDraft } from '../../lib/session'
 import type { SessionDraftPayload, SessionOrigin } from '../../lib/session'
 import type { Step } from '../../lib/steps'
 import { ACHIEVEMENTS } from '../../state/achievements'
 import { useNuri } from '../../state/useNuri'
+import { getDisplayedStreak } from '../../state/transitions'
 import { navigateTo } from '../../state/router'
 import { SessionRunner } from './SessionRunner'
 import type { SessionSummary } from './SessionRunner'
@@ -36,6 +40,7 @@ type GatePhase =
   | { kind: 'empty'; message: string }
   | { kind: 'running'; session: SessionDraftPayload }
   | { kind: 'finished'; summary: SessionSummary; result: SessionResult }
+  | { kind: 'streak'; summary: SessionSummary; result: SessionResult }
 
 /**
  * Decide entre retomar o rascunho salvo, avisar que outra atividade seria substituída
@@ -72,9 +77,20 @@ export function SessionGate({ origin, title, exitHref, buildPlan, complete }: Se
   }
 
   const handleFinish = (summary: SessionSummary): void => {
+    const previousStreak = getDisplayedStreak(state.progress, todayKey())
     const result = complete(summary)
     actions.clearDraft()
-    setPhase({ kind: 'finished', summary, result })
+    const nextStreak = getDisplayedStreak(
+      // O complete() já atualizou o estado via actions; lemos o streak atualizado na próxima render.
+      // Aqui usamos o valor anterior + 1 como sinal de celebração imediata.
+      { ...state.progress, streak: Math.max(previousStreak, 1), lastStudyDay: todayKey() },
+      todayKey(),
+    )
+    setPhase(
+      nextStreak > 0
+        ? { kind: 'streak', summary, result }
+        : { kind: 'finished', summary, result },
+    )
   }
 
   const handleReplace = (): void => {
@@ -125,39 +141,64 @@ export function SessionGate({ origin, title, exitHref, buildPlan, complete }: Se
     )
   }
 
+  if (phase.kind === 'streak') {
+    const streak = getDisplayedStreak(state.progress, todayKey())
+    const recentDays = state.progress.history.slice(-7)
+    const weekMarks = Array.from({ length: 7 }, (_, index) => {
+      const entry = recentDays[recentDays.length - 7 + index]
+      return Boolean(entry && entry.lessons > 0)
+    })
+    const perfectDays = weekMarks.filter(Boolean).length
+    return (
+      <div className="screen">
+        <StreakCelebrate
+          streak={streak}
+          weekMarks={weekMarks}
+          message={
+            perfectDays >= 3
+              ? `Você conseguiu uma ofensiva perfeita por praticar ${perfectDays} dias seguidos!`
+              : 'Continue praticando para manter a ofensiva acesa.'
+          }
+          onContinue={() => setPhase({ kind: 'finished', summary: phase.summary, result: phase.result })}
+        />
+      </div>
+    )
+  }
+
   if (phase.kind === 'finished') {
     const { summary, result } = phase
     const achievementTitles = result.newAchievementIds.flatMap(
       (achievementId) => ACHIEVEMENTS.find((achievement) => achievement.id === achievementId)?.title ?? [],
     )
     const backLabel = exitHref === '#/learn' ? 'Voltar à trilha' : 'Voltar'
+    const accuracy =
+      summary.gradedCount > 0 ? Math.round((summary.firstTryHits / summary.gradedCount) * 100) : 100
+    const accuracyLabel = accuracy >= 90 ? 'Ótima' : accuracy >= 70 ? 'Boa' : 'Em progresso'
+
     return (
-      <div className="screen finish">
-        <p className="finish__mascot" lang="ko" aria-hidden="true">
-          늘
-        </p>
-        <h1 className="screen__title">{result.message ?? 'Atividade concluída'}</h1>
-        <p className="finish__score">
-          {summary.gradedCount > 0
-            ? `${summary.firstTryHits} de ${summary.gradedCount} acertos de primeira`
-            : 'Você completou todos os passos.'}
-        </p>
-        <p className="finish__xp">{result.xpGained > 0 ? `+${result.xpGained} XP` : 'Sem XP novo desta vez'}</p>
-        {achievementTitles.length > 0 ? (
-          <FeedbackBanner tone="success" title="Nova conquista!">
-            {achievementTitles.join(', ')}
-          </FeedbackBanner>
-        ) : null}
-        <div className="stack">
-          <a className="button button--primary button--block" href={exitHref}>
-            {backLabel}
-          </a>
-          {result.nextHref ? (
-            <a className="button button--secondary button--block" href={result.nextHref}>
-              {result.nextLabel ?? 'Próxima aula'}
-            </a>
+      <div className="screen">
+        <FinishCelebration
+          title={result.message ?? 'Lição concluída!'}
+          stats={[
+            { label: 'Total de XP', value: result.xpGained > 0 ? String(result.xpGained) : '0', tone: 'xp' },
+            { label: accuracyLabel, value: `${accuracy}%`, tone: 'accuracy' },
+            {
+              label: 'De primeira',
+              value: summary.gradedCount > 0 ? `${summary.firstTryHits}/${summary.gradedCount}` : '—',
+              tone: 'time',
+            },
+          ]}
+          primaryHref={exitHref}
+          primaryLabel={result.xpGained > 0 ? 'Receber XP' : backLabel}
+          secondaryHref={result.nextHref}
+          secondaryLabel={result.nextLabel ?? 'Próxima aula'}
+        >
+          {achievementTitles.length > 0 ? (
+            <FeedbackBanner tone="success" title="Nova conquista!">
+              {achievementTitles.join(', ')}
+            </FeedbackBanner>
           ) : null}
-        </div>
+        </FinishCelebration>
       </div>
     )
   }

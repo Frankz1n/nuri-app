@@ -3,7 +3,10 @@ import type { ReactNode } from 'react'
 import { daysBetween, todayKey } from '../../core'
 import type { WritingResult } from '../../core'
 import { getLetterById, getReadingById, getVocabById } from '../../data'
+import { AnswerSheet } from '../../components/AnswerSheet'
+import { ExplainPanel } from '../../components/ExplainPanel'
 import { FeedbackBanner } from '../../components/FeedbackBanner'
+import { MascotPrompt } from '../../components/MascotPrompt'
 import { StarIcon } from '../../components/icons'
 import { SyllableBoard } from '../../components/SyllableBoard'
 import { TileBoard } from '../../components/TileBoard'
@@ -113,6 +116,7 @@ export function ChoiceView({ step, onAttempt, onContinue }: GradedViewProps<Choi
   const [attemptCount, setAttemptCount] = useState(0)
   const [outcome, setOutcome] = useState<'correct' | 'wrong' | null>(null)
   const [isContextVisible, setIsContextVisible] = useState(false)
+  const [isExplainOpen, setIsExplainOpen] = useState(false)
 
   const check = (): void => {
     if (selectedIndex === null) return
@@ -125,40 +129,58 @@ export function ChoiceView({ step, onAttempt, onContinue }: GradedViewProps<Choi
   const retry = (): void => {
     setSelectedIndex(null)
     setOutcome(null)
+    setIsExplainOpen(false)
   }
 
   const isLocked = outcome !== null
+  const correctOption = step.options[step.answerIndex]
+
+  if (isExplainOpen) {
+    return (
+      <ExplainPanel
+        prompt={step.big ?? correctOption?.text}
+        promptLanguage={step.bigLanguage ?? correctOption?.language}
+        explanation={step.explanation}
+        onClose={() => setIsExplainOpen(false)}
+        onContinue={() => {
+          setIsExplainOpen(false)
+          onContinue()
+        }}
+      />
+    )
+  }
 
   return (
-    <div className="step">
-      <h2 className="step__title">{step.prompt}</h2>
-      {step.context ? (
-        <div className="reading-context">
-          <ul className="reading-lines reading-lines--compact">
-            {step.context.map((line) => (
-              <li key={line.ko} className="reading-line">
-                <span className="reading-line__ko" lang="ko">
-                  {line.ko}
-                </span>
-                {isContextVisible ? <span className="reading-line__pt">{line.pt}</span> : null}
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            className="button button--ghost"
-            aria-pressed={isContextVisible}
-            onClick={() => setIsContextVisible((current) => !current)}
-          >
-            {isContextVisible ? 'Esconder tradução' : 'Mostrar tradução'}
-          </button>
-        </div>
-      ) : null}
-      {step.big ? (
-        <p className="step__big" lang={languageOf(step.bigLanguage)}>
-          {step.big}
-        </p>
-      ) : null}
+    <div className={`step step--coach${outcome ? ` step--${outcome}` : ''}`}>
+      <MascotPrompt
+        title={step.prompt}
+        pose={outcome === 'wrong' ? 'worried' : outcome === 'correct' ? 'cheer' : 'wave'}
+        speech={step.big}
+        speechLanguage={step.bigLanguage}
+      >
+        {step.context ? (
+          <div className="reading-context">
+            <ul className="reading-lines reading-lines--compact">
+              {step.context.map((line) => (
+                <li key={line.ko} className="reading-line">
+                  <span className="reading-line__ko" lang="ko">
+                    {line.ko}
+                  </span>
+                  {isContextVisible ? <span className="reading-line__pt">{line.pt}</span> : null}
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="button button--ghost"
+              aria-pressed={isContextVisible}
+              onClick={() => setIsContextVisible((current) => !current)}
+            >
+              {isContextVisible ? 'Esconder tradução' : 'Mostrar tradução'}
+            </button>
+          </div>
+        ) : null}
+      </MascotPrompt>
       <div className="choice-list" role="radiogroup" aria-label="Alternativas">
         {step.options.map((option, index) => {
           const isSelected = selectedIndex === index
@@ -181,31 +203,30 @@ export function ChoiceView({ step, onAttempt, onContinue }: GradedViewProps<Choi
         })}
       </div>
       <StepFooter>
-        {outcome === 'correct' ? (
-          <FeedbackBanner tone="success" title="Correto!">
-            {step.explanation}
-          </FeedbackBanner>
-        ) : null}
-        {outcome === 'wrong' ? (
-          <FeedbackBanner tone="error" title="Ainda não.">
-            {step.explanation}
-          </FeedbackBanner>
-        ) : null}
         {outcome === null ? (
           <button type="button" className="button button--primary button--block" disabled={selectedIndex === null} onClick={check}>
             Verificar
           </button>
         ) : (
-          <div className="button-row">
-            {outcome === 'wrong' ? (
-              <button type="button" className="button button--secondary" onClick={retry}>
-                Tentar de novo
-              </button>
-            ) : null}
-            <button type="button" className="button button--primary" onClick={onContinue}>
-              Continuar
-            </button>
-          </div>
+          <AnswerSheet
+            tone={outcome === 'correct' ? 'correct' : 'wrong'}
+            title={outcome === 'correct' ? 'Certo!' : 'Incorreto'}
+            detail={
+              outcome === 'wrong' ? (
+                <>
+                  Resposta correta: <strong>{correctOption?.text}</strong>
+                </>
+              ) : (
+                step.explanation
+              )
+            }
+            explainLabel={outcome === 'correct' ? 'Explique minha resposta' : 'Explique meu erro'}
+            onExplain={() => setIsExplainOpen(true)}
+            secondaryLabel={outcome === 'wrong' ? 'Tentar de novo' : undefined}
+            onSecondary={outcome === 'wrong' ? retry : undefined}
+            primaryLabel={outcome === 'correct' ? 'Continuar' : 'Ok!'}
+            onPrimary={onContinue}
+          />
         )}
       </StepFooter>
     </div>
@@ -218,11 +239,16 @@ export function TilesView({ step, onAttempt, onContinue }: GradedViewProps<Tiles
   const [usedHint, setUsedHint] = useState(false)
   const [outcome, setOutcome] = useState<'correct' | 'wrong' | null>(null)
   const [boardKey, setBoardKey] = useState(0)
+  const [isExplainOpen, setIsExplainOpen] = useState(false)
 
   const isJamoAssemble = step.join === 'jamo'
   const composed = step.composed ?? (isJamoAssemble ? composeFromJamo(step.answer) : joinTiles(step.answer, step.join))
   const requiredCount = step.answer.length
   const isFillComplete = selectedValues.length >= requiredCount
+  const showSpeech = Boolean(step.big && !step.hideTarget)
+  const wrongDetail = isJamoAssemble
+    ? explainAssembleMistake(selectedValues, step.answer)
+    : `Você montou “${joinTiles(selectedValues, step.join)}”. Resposta correta: ${composed}.`
 
   const check = (): void => {
     if (!isFillComplete) return
@@ -236,26 +262,39 @@ export function TilesView({ step, onAttempt, onContinue }: GradedViewProps<Tiles
   const retry = (): void => {
     setSelectedValues([])
     setOutcome(null)
+    setIsExplainOpen(false)
     setBoardKey((key) => key + 1)
   }
 
+  if (isExplainOpen) {
+    return (
+      <ExplainPanel
+        prompt={composed}
+        promptLanguage="ko"
+        romanization={step.promptHint}
+        explanation={step.explanation}
+        onClose={() => setIsExplainOpen(false)}
+        onContinue={() => {
+          setIsExplainOpen(false)
+          onContinue()
+        }}
+      />
+    )
+  }
+
   return (
-    <div className={`step${isJamoAssemble ? ' step--assemble' : ''}${outcome === 'correct' ? ' step--solved' : ''}`}>
-      <h2 className="step__title">{step.prompt}</h2>
-      {isJamoAssemble && step.promptHint ? (
-        <p className="step__target-hint">
-          <span className="step__target-mark" aria-hidden="true" lang="ko">
-            한
-          </span>
-          <span className="step__target-roma">{step.promptHint}</span>
-        </p>
-      ) : null}
-      {step.big && !step.hideTarget ? (
-        <p className="step__big" lang={languageOf(step.bigLanguage)}>
-          {step.big}
-        </p>
-      ) : null}
-      {step.patternHint ? <p className="step__hint">{step.patternHint}</p> : null}
+    <div
+      className={`step step--coach${isJamoAssemble ? ' step--assemble' : ''}${outcome === 'correct' ? ' step--solved' : ''}${outcome ? ` step--${outcome}` : ''}`}
+    >
+      <MascotPrompt
+        title={step.prompt}
+        pose={outcome === 'wrong' ? 'worried' : outcome === 'correct' ? 'cheer' : 'confident'}
+        speech={showSpeech ? step.big : undefined}
+        speechLanguage={step.bigLanguage}
+        romanization={isJamoAssemble ? step.promptHint : undefined}
+      >
+        {step.patternHint ? <p className="step__hint">{step.patternHint}</p> : null}
+      </MascotPrompt>
       {isJamoAssemble ? (
         <SyllableBoard
           key={boardKey}
@@ -278,18 +317,6 @@ export function TilesView({ step, onAttempt, onContinue }: GradedViewProps<Tiles
         />
       )}
       <StepFooter>
-        {outcome === 'correct' ? (
-          <FeedbackBanner tone="success" title="Isso mesmo!">
-            Você montou {composed}. {step.explanation}
-          </FeedbackBanner>
-        ) : null}
-        {outcome === 'wrong' ? (
-          <FeedbackBanner tone="error" title="Ainda não.">
-            {isJamoAssemble
-              ? explainAssembleMistake(selectedValues, step.answer)
-              : `Você montou “${joinTiles(selectedValues, step.join)}”. ${step.explanation}`}
-          </FeedbackBanner>
-        ) : null}
         {outcome === null ? (
           <>
             {isJamoAssemble && step.helpLevel !== 'demo' ? (
@@ -306,19 +333,18 @@ export function TilesView({ step, onAttempt, onContinue }: GradedViewProps<Tiles
               Verificar
             </button>
           </>
-        ) : outcome === 'correct' ? (
-          <button type="button" className="button button--primary button--block" onClick={onContinue}>
-            Continuar
-          </button>
         ) : (
-          <div className="button-row">
-            <button type="button" className="button button--secondary" onClick={retry}>
-              Tentar de novo
-            </button>
-            <button type="button" className="button button--primary" onClick={onContinue}>
-              Continuar
-            </button>
-          </div>
+          <AnswerSheet
+            tone={outcome === 'correct' ? 'correct' : 'wrong'}
+            title={outcome === 'correct' ? 'Isso mesmo!' : 'Incorreto'}
+            detail={outcome === 'correct' ? `Você montou ${composed}. ${step.explanation}` : wrongDetail}
+            explainLabel={outcome === 'correct' ? 'Explique minha resposta' : 'Explique meu erro'}
+            onExplain={() => setIsExplainOpen(true)}
+            secondaryLabel={outcome === 'wrong' ? 'Tentar de novo' : undefined}
+            onSecondary={outcome === 'wrong' ? retry : undefined}
+            primaryLabel={outcome === 'correct' ? 'Continuar' : 'Ok!'}
+            onPrimary={onContinue}
+          />
         )}
       </StepFooter>
     </div>

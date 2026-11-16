@@ -9,6 +9,10 @@ const BRAND_CREAM = '#fff7e9'
 export default defineConfig({
   // Caminhos relativos: o app funciona em qualquer subpasta e com rotas por hash (#/...).
   base: './',
+  server: {
+    // Libera hosts do Cloudflare Tunnel (URL muda a cada restart do cloudflared).
+    allowedHosts: ['.trycloudflare.com'],
+  },
   plugins: [
     react(),
     VitePWA({
