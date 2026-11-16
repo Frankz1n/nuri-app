@@ -1,6 +1,6 @@
 # Nuri
 
-App PWA de estudo de coreano para brasileiros, pensado para o trio **escrever · ouvir · ler**: hangul, sílabas, vocabulário, frases, leitura, escuta guiada, autoescuta de pronúncia e (em breve) conversação com IA. Progresso local; depois do primeiro carregamento online, funciona offline.
+App PWA de estudo de coreano para brasileiros, com uma trilha que começa por **ouvir e falar**, intercalando leitura em hangul e escrita guiada. O app também tem alfabeto, sílabas, vocabulário, frases e leitura. O progresso fica no aparelho e o conteúdo da build pode ser acessado offline após o primeiro carregamento.
 
 ## Comandos
 
@@ -43,20 +43,23 @@ A primeira visita sem rede não tem o que cachear: é necessário um primeiro ca
 
 ## Estrutura
 
-- `src/data` — catálogo (58 aulas, 8 unidades, 40 letras, 70 palavras, 3 leituras) com `audioKey` opcional; piloto `lesson-u1-00` (가/나) e demo `lesson-u2-16` (ㅣ→피→키)
+- `src/data` — catálogo (61 aulas, 9 unidades, 40 letras, 70 palavras, 3 leituras) com `audioKey` opcional; piloto `lesson-u1-00` (가/나) e demo `lesson-u2-16` (ㅣ→피→키)
 - `src/core` — datas, XP, revisão, escrita, estado, backup/migração
 - `src/lib/audio` — contratos e registry para TTS, pronúncia e conversa
 - `src/features` — telas; `src/components` — UI reutilizável
 - `src/pwa` — instalação e atualização do service worker
 
-## Próximas integrações (voz e IA)
+## Unidade “A live começou”
 
-Nesta versão **não** há chamadas a ElevenLabs nem a modelos de IA, e **não** há pontuação simulada.
+As três primeiras aulas trabalham cumprimentos, teste de som e agradecimento. Cada uma começa com compreensão oral, sem mostrar hangul ou tradução antes da tentativa, seguida de leitura, resposta falada, nova versão da fala e escrita de uma letra presente na expressão. A checagem de compreensão e a de aplicação aparecem separadas em Progresso. A ajuda em texto não é contada como escuta independente. Erros de escuta aparecem em Revisão.
 
-| Capacidade | Tela / rota | Onde plugar |
-|------------|-------------|-------------|
-| TTS / biblioteca de vozes | Escuta (`#/listen`), botão Ouvir em letra/palavra | `setAudioProvider(...)` em `src/lib/audio/registry.ts` |
-| Análise de pronúncia | Pronúncia (`#/pronounce`) — hoje só autoescuta local | `setPronunciationProvider(...)` |
-| Conversação | Conversar (`#/converse`) — UI de cenários pronta | `setConversationProvider(...)` |
+- O app prioriza clipes próprios da build. Consulte [nomes e formatos dos arquivos](src/assets/live-audio/README.md) para incluir as nove gravações. Esta versão ainda não leva esses arquivos.
+- Sem clipe, a reprodução usa a voz **coreana local** do navegador ou sistema, se disponível. O Nuri sinaliza essa modalidade. Em aparelhos sem voz instalada, **Ver frase em hangul** é a alternativa. O service worker não instala vozes do aparelho.
+- A resposta falada funciona com microfone opcional. A gravação fica na memória somente enquanto a tela está aberta, pode ser reproduzida para comparação com o modelo e não recebe nota. Negar permissão não impede a próxima etapa.
+- Validação manual: em um aparelho com voz coreana local ou build com clipes, entre na primeira aula, ouça até o fim, escolha uma opção e confira. Recarregue no feedback e confirme que a resposta foi mantida. Leia, grave e compare, tente a fala nova e faça a escrita. Repita o teste sem microfone ou sem voz local para verificar as alternativas.
 
-Chaves de áudio estáveis: `letter:…`, `vocab:…`, `phrase:…`, `reading:…:linha` (`src/lib/audio/keys.ts`). A gravação local de pronúncia não entra no backup.
+Os contratos existentes em `src/lib/audio` continuam disponíveis para integrações futuras com biblioteca ampliada, análise de pronúncia e conversação.
+
+## Mídia nas aulas
+
+[Veja como cadastrar trechos na trilha Trechos do BTS](src/assets/live-media/README.md). O aluno assiste em coreano, responde e confere o texto e o sentido da fala. A lição pode usar uma imagem para contextualizar a leitura e um segundo trecho na checagem de compreensão. A unidade aparece quando o catálogo recebe as primeiras mídias aprovadas.

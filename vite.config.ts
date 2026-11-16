@@ -38,7 +38,7 @@ export default defineConfig({
       workbox: {
         // Prefixo próprio: a limpeza de caches antigos só toca caches do Nuri (nunca o localStorage).
         cacheId: 'nuri',
-        globPatterns: ['**/*.{html,css,js,svg,png,ico,webmanifest,woff,woff2}'],
+        globPatterns: ['**/*.{html,css,js,svg,png,ico,webmanifest,woff,woff2,mp3,mp4,jpg,jpeg,webp}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         skipWaiting: false,

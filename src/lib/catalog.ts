@@ -23,23 +23,9 @@ export const summarizeUnit = (unit: Unit, completedLessons: readonly string[]): 
   total: unit.lessonIds.length,
 })
 
-/**
- * Iniciante (zero aulas) começa pelo piloto 가/나.
- * Quem já tem progresso não é bloqueado por aulas piloto ainda não feitas —
- * elas seguem disponíveis na trilha da unidade.
- */
-export const findNextLesson = (completedLessons: readonly string[]): Lesson | undefined => {
-  const pilot = LESSONS.find((lesson) => lesson.id === 'lesson-u1-00')
-  if (completedLessons.length === 0 && pilot) return pilot
-
-  const nextRegular = LESSONS.find(
-    (lesson) => lesson.id !== 'lesson-u1-00' && !completedLessons.includes(lesson.id),
-  )
-  if (nextRegular) return nextRegular
-
-  if (pilot && !completedLessons.includes(pilot.id)) return pilot
-  return undefined
-}
+// O catálogo está na ordem da trilha e preserva os IDs concluídos das versões anteriores.
+export const findNextLesson = (completedLessons: readonly string[]): Lesson | undefined =>
+  LESSONS.find((lesson) => !completedLessons.includes(lesson.id))
 
 export const getUnitOfLesson = (lesson: Lesson): Unit | undefined => UNITS.find((unit) => unit.id === lesson.unitId)
 
@@ -54,6 +40,7 @@ export const LESSON_KIND_LABELS: Readonly<Record<Lesson['kind'], string>> = {
   vocab: 'Vocabulário',
   phrase: 'Frases',
   reading: 'Leitura',
+  live: 'Escuta e fala',
 }
 
 export const getLettersUnlockedByProgress = (completedLessons: readonly string[]): Letter[] => {

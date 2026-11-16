@@ -49,8 +49,7 @@ test('piloto e sequência 피/키 geram etapas jogáveis', () => {
   assert.ok(demoSteps.some((step) => step.kind === 'tiles' && step.composed === '키'))
 })
 
-test('catálogo inclui as duas aulas novas', () => {
-  assert.equal(catalog.CATALOG_STATS.lessons, 58)
+test('catálogo preserva o piloto de blocos e a sequência do vídeo', () => {
   assert.ok(catalog.LESSONS.some((lesson) => lesson.id === 'lesson-u1-00'))
   assert.ok(catalog.LESSONS.some((lesson) => lesson.id === 'lesson-u2-16'))
 })

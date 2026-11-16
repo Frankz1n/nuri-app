@@ -78,7 +78,7 @@ export function PracticeHome() {
 
   return (
     <div className="screen screen--guided">
-      <AppHeader title="Praticar" subtitle="Reforce o que a trilha já abriu." />
+      <AppHeader title="Praticar" subtitle="Ouça e responda, ou treine leitura e escrita." />
 
       {hasReviewWork ? (
         <a className="path-review" href="#/review">

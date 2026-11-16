@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { LessonLayout } from '../../components/LessonLayout'
-import type { SessionDraftPayload } from '../../lib/session'
+import type { ListeningAnswer, SessionDraftPayload } from '../../lib/session'
 import type { Step } from '../../lib/steps'
 import { useNuri } from '../../state/useNuri'
+import { LiveDialogueView, LiveListeningView } from './LiveViews'
 import { CardView, ChoiceView, InfoView, PairsView, ReadView, TilesView, WriteView } from './StepViews'
 
 export interface SessionSummary {
@@ -22,6 +23,7 @@ interface SessionRunnerProps {
 export function SessionRunner({ title, session, onProgress, onExit, onFinish }: SessionRunnerProps) {
   const { actions } = useNuri()
   const [index, setIndex] = useState(session.index)
+  const [listeningAnswer, setListeningAnswer] = useState(session.listeningAnswer)
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false)
   const countsRef = useRef<SessionSummary>({ gradedCount: session.gradedCount, firstTryHits: session.firstTryHits })
 
@@ -42,6 +44,15 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
     actions.queueError({ id: step.errorId, kind: step.errorId.split(':')[0], lastFailedSessionId: session.sessionId })
   }
 
+  const handleListeningAnswer = (answer: ListeningAnswer): void => {
+    if (step.kind !== 'live-listen' || !actions.recordListeningAnswer(session.sessionId, index, answer)) return
+    if (answer.unaided) {
+      countsRef.current.gradedCount++
+      if (answer.option === step.answerIndex) countsRef.current.firstTryHits++
+    }
+    setListeningAnswer(answer)
+  }
+
   const handleContinue = (): void => {
     const nextIndex = index + 1
     if (nextIndex >= session.steps.length) {
@@ -49,11 +60,17 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
       return
     }
     setIndex(nextIndex)
-    onProgress({ ...session, index: nextIndex, ...countsRef.current })
+    setListeningAnswer(undefined)
+    onProgress({ ...session, index: nextIndex, ...countsRef.current, listeningAnswer: undefined })
   }
 
   const renderStep = () => {
     switch (step.kind) {
+      case 'live-listen':
+        return <LiveListeningView step={step} answer={listeningAnswer} onAnswer={handleListeningAnswer} onContinue={handleContinue} />
+      case 'live-read':
+      case 'live-speak':
+        return <LiveDialogueView step={step} onContinue={handleContinue} />
       case 'info':
         return <InfoView step={step} onContinue={handleContinue} />
       case 'read':

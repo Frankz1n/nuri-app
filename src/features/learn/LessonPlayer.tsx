@@ -33,7 +33,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
           ? 'Você montou seus primeiros blocos'
           : lesson.kind === 'letter'
             ? 'Você praticou uma nova letra'
-            : 'Aula concluída'
+            : lesson.kind === 'live' ? 'Situação da live praticada!' : 'Aula concluída'
     return {
       xpGained: outcome.xpGained,
       newAchievementIds: outcome.newAchievements,

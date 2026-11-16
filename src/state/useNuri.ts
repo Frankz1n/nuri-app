@@ -7,6 +7,7 @@ import type {
   SaveStateFailureReason,
   StoredStateStatus,
 } from '../core'
+import type { ListeningAnswer } from '../lib/session'
 import type { TransitionOutcome } from './transitions'
 
 export interface NuriActions {
@@ -18,6 +19,7 @@ export interface NuriActions {
   clearError: (itemId: string, sessionId: string) => void
   recordSkillAttempt: (skillId: string, isHit: boolean) => void
   setProfile: (patch: Partial<NuriProfile>) => void
+  recordListeningAnswer: (sessionId: string, index: number, answer: ListeningAnswer) => boolean
   setDraft: (type: string, payload: unknown) => void
   clearDraft: () => void
   setRoute: (route: string) => void

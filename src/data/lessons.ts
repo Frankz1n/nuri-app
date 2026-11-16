@@ -1,6 +1,8 @@
 ﻿import { LETTERS, getLetterById } from './letters'
 import type { Lesson, LessonKind, LetterGroup, Unit, VocabCategory } from './types'
 import { getVocabIdsByCategory } from './vocabulary'
+import { ALL_LIVE_SITUATIONS, LIVE_UNIT_ID } from './live'
+import { BTS_SITUATIONS, BTS_UNIT_ID } from './liveMedia'
 
 export { getLetterById }
 
@@ -12,6 +14,7 @@ const XP_BY_KIND: Readonly<Record<LessonKind, number>> = {
   vocab: 15,
   phrase: 20,
   reading: 25,
+  live: 20,
 }
 
 const buildLessonId = (unitNumber: number, position: number): string =>
@@ -163,7 +166,16 @@ const UNIT_8_LESSONS: Lesson[] = [
   },
 ]
 
+const btsIds = new Set(BTS_SITUATIONS.map((situation) => situation.id))
+
 export const LESSONS: readonly Lesson[] = [
+  ...ALL_LIVE_SITUATIONS.map((situation): Lesson => ({
+    id: situation.id,
+    unitId: btsIds.has(situation.id) ? BTS_UNIT_ID : LIVE_UNIT_ID,
+    title: situation.title,
+    kind: 'live',
+    xpReward: XP_BY_KIND.live,
+  })),
   ...UNIT_1_LESSONS,
   ...UNIT_2_LESSONS,
   ...UNIT_3_LESSONS,
@@ -183,6 +195,8 @@ const defineUnit = (number: number, title: string, description: string): Unit =>
 }
 
 export const UNITS: readonly Unit[] = [
+  defineUnit(9, 'A live começou', 'Ouça uma expressão, acompanhe o hangul e responda em voz alta.'),
+  ...(BTS_SITUATIONS.length ? [defineUnit(10, 'Trechos do BTS', 'Entenda expressões em falas reais e pratique suas respostas.')] : []),
   defineUnit(1, 'Primeiros blocos', 'Comece com ㄱ, ㄴ e ㅏ; monte 가 e 나. Depois siga as vogais.'),
   defineUnit(2, 'Novas conexões', 'Consoantes básicas, revisão e a sequência ㅣ → 피 → 키.'),
   defineUnit(3, 'Ampliando o hangul', 'Domine as vogais compostas e as consoantes duplas.'),

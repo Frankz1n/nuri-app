@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { UNITS } from '../../data'
+import { BTS_SITUATIONS, BTS_UNIT_ID, LIVE_UNIT_ID, UNITS } from '../../data'
 import { XP_LESSON_FIRST, getDueCards, todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
 import { PathStep } from '../../components/PathStep'
@@ -23,6 +23,8 @@ export function LearnHome() {
   const activeUnit = isExploring
     ? (UNITS.find((unit) => unit.id === selectedUnitId) ?? plan.currentUnit ?? UNITS[0])
     : (plan.currentUnit ?? UNITS[0])
+  const btsLesson = BTS_SITUATIONS.find((situation) => !completedLessons.includes(situation.id)) ?? BTS_SITUATIONS[0]
+  const isLiveUnit = activeUnit.id === LIVE_UNIT_ID || activeUnit.id === BTS_UNIT_ID
   const unitLessons = getCurrentUnitLessons(activeUnit)
   const draft = parseSessionDraft(state.activityDraft)
   const dueCount = getDueCards(state.progress.reviewCards, today).length
@@ -47,7 +49,9 @@ export function LearnHome() {
   const primaryMeta = draft
     ? `Em andamento · passo ${draft.index + 1} de ${draft.steps.length}`
     : plan.nextLesson
-      ? `${LESSON_KIND_LABELS[plan.nextLesson.kind]} · +${XP_LESSON_FIRST} XP na primeira vez`
+      ? plan.nextLesson.kind === 'live'
+        ? 'Escute a fala, acompanhe o texto e pratique sua resposta.'
+        : `${LESSON_KIND_LABELS[plan.nextLesson.kind]} · +${XP_LESSON_FIRST} XP na primeira vez`
       : 'Use Praticar para reforçar o que aprendeu.'
 
   return (
@@ -55,7 +59,7 @@ export function LearnHome() {
       <AppHeader
         showBrand
         title="Nuri"
-        subtitle={streak > 0 ? `Sequência · ${streak} ${streak === 1 ? 'dia' : 'dias'}` : 'Aprenda hangul no seu ritmo'}
+        subtitle={streak > 0 ? `Sequência · ${streak} ${streak === 1 ? 'dia' : 'dias'}` : 'Coreano para ouvir, falar, ler e escrever'}
         actions={
           streak > 0 ? (
             <span className="chip chip--accent" aria-hidden="true">
@@ -67,7 +71,7 @@ export function LearnHome() {
 
       <section className="path-hero" aria-labelledby="unit-objective">
         <p id="unit-objective" className="path-hero__unit">
-          Unidade {activeUnit.number} · {activeUnit.title}
+          {isLiveUnit ? activeUnit.title : `Unidade ${activeUnit.number} · ${activeUnit.title}`}
         </p>
         <h2 className="path-hero__title">{primaryTitle}</h2>
         <p className="path-hero__meta">{primaryMeta}</p>
@@ -98,7 +102,7 @@ export function LearnHome() {
         <div className="path-trail__header">
           <div>
             <h2 id="path-title" className="path-trail__heading">
-              {isExploring ? `Unidade ${activeUnit.number}` : 'Sua trilha'}
+              {isExploring ? activeUnit.title : 'Sua trilha'}
             </h2>
             <p className="path-trail__sub">{activeUnit.description}</p>
           </div>
@@ -106,6 +110,12 @@ export function LearnHome() {
             {isExploring ? 'Voltar' : 'Explorar unidades'}
           </button>
         </div>
+
+        {!isExploring && btsLesson && activeUnit.id !== BTS_UNIT_ID ? (
+          <a className="button button--secondary" href={`#/lesson/${btsLesson.id}`}>
+            Praticar com trechos do BTS
+          </a>
+        ) : null}
 
         {isExploring ? (
           <div className="unit-picker unit-picker--explore" role="tablist" aria-label="Unidades">
@@ -118,10 +128,11 @@ export function LearnHome() {
                   type="button"
                   role="tab"
                   aria-selected={isSelected}
+                  aria-label={unit.title}
                   className={`unit-chip${isSelected ? ' is-active' : ''}`}
                   onClick={() => setSelectedUnitId(unit.id)}
                 >
-                  <span className="unit-chip__number">{unit.number}</span>
+                  <span className="unit-chip__number">{unit.id === BTS_UNIT_ID ? 'BTS' : unit.id === LIVE_UNIT_ID ? 'Live' : unit.number}</span>
                   <span className="unit-chip__progress">
                     {summary.completed}/{summary.total}
                   </span>

@@ -14,6 +14,8 @@ import {
 } from '../core'
 import type { ErrorItemInput, HistoryEntry, NuriProfile, NuriProgress, NuriState, ReviewCard, ReviewResult } from '../core'
 import { findNewAchievementIds } from './achievements'
+import { SESSION_DRAFT_TYPE, parseSessionDraft } from '../lib/session'
+import type { ListeningAnswer } from '../lib/session'
 
 const HISTORY_LIMIT_DAYS = 120
 
@@ -144,6 +146,42 @@ export const recordSkillAttemptTransition = (state: NuriState, skillId: string, 
   const current = state.progress.skillFirstTry[skillId] ?? { hits: 0, total: 0 }
   const next = { hits: current.hits + (isHit ? 1 : 0), total: current.total + 1 }
   return withProgress(state, { ...state.progress, skillFirstTry: { ...state.progress.skillFirstTry, [skillId]: next } })
+}
+
+export const recordListeningAnswerTransition = (
+  state: NuriState,
+  sessionId: string,
+  index: number,
+  answer: ListeningAnswer,
+): NuriState => {
+  const draft = parseSessionDraft(state.activityDraft)
+  if (!draft || draft.sessionId !== sessionId || draft.index !== index || draft.listeningAnswer) return state
+  const step = draft.steps[index]
+  if (step.kind !== 'live-listen' || !Number.isInteger(answer.option) || answer.option < 0 || answer.option >= step.options.length) return state
+
+  const correct = answer.option === step.answerIndex
+  let nextState = state
+  if (answer.unaided) {
+    nextState = recordSkillAttemptTransition(nextState, step.skillId, correct)
+    if (step.errorId) {
+      nextState = correct
+        ? clearErrorTransition(nextState, step.errorId, sessionId)
+        : queueErrorTransition(nextState, { id: step.errorId, kind: 'live-listen', lastFailedSessionId: sessionId })
+    }
+  }
+  return {
+    ...nextState,
+    activityDraft: {
+      type: SESSION_DRAFT_TYPE,
+      updatedAt: new Date().toISOString(),
+      payload: {
+        ...draft,
+        listeningAnswer: answer,
+        gradedCount: draft.gradedCount + Number(answer.unaided),
+        firstTryHits: draft.firstTryHits + Number(answer.unaided && correct),
+      },
+    },
+  }
 }
 
 export const setProfileTransition = (state: NuriState, patch: Partial<NuriProfile>): NuriState => ({
