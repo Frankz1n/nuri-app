@@ -1,8 +1,23 @@
+import { BTS_SITUATIONS } from './liveMedia'
+
 export const LIVE_UNIT_ID = 'unit-9'
+
+export interface LiveVideoClip {
+  file: string
+  poster?: string
+  credit: string
+}
+
+export interface LivePicture {
+  file: string
+  alt: string
+  credit: string
+}
 
 export interface LiveLine {
   ko: string
   pt: string
+  video?: LiveVideoClip
 }
 
 export interface LiveSituation {
@@ -14,6 +29,7 @@ export interface LiveSituation {
   transfer: LiveLine
   focus: string
   letterId: string
+  picture?: LivePicture
   writingPrompt: string
   distractors: [string, string]
 }
@@ -60,5 +76,7 @@ export const LIVE_SITUATIONS: readonly LiveSituation[] = [
 export type LiveClipRole = 'opening' | 'reply' | 'transfer'
 export const liveAudioKey = (id: string, role: LiveClipRole): string => `live:${id}:${role}`
 
+export const ALL_LIVE_SITUATIONS = [...LIVE_SITUATIONS, ...BTS_SITUATIONS]
+
 export const getLiveSituation = (id: string): LiveSituation | undefined =>
-  LIVE_SITUATIONS.find((situation) => situation.id === id)
+  ALL_LIVE_SITUATIONS.find((situation) => situation.id === id)

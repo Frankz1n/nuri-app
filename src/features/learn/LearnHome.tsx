@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { LIVE_UNIT_ID, UNITS } from '../../data'
+import { BTS_SITUATIONS, BTS_UNIT_ID, LIVE_UNIT_ID, UNITS } from '../../data'
 import { XP_LESSON_FIRST, getDueCards, todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
 import { PathStep } from '../../components/PathStep'
@@ -23,7 +23,8 @@ export function LearnHome() {
   const activeUnit = isExploring
     ? (UNITS.find((unit) => unit.id === selectedUnitId) ?? plan.currentUnit ?? UNITS[0])
     : (plan.currentUnit ?? UNITS[0])
-  const isLiveUnit = activeUnit.id === LIVE_UNIT_ID
+  const btsLesson = BTS_SITUATIONS.find((situation) => !completedLessons.includes(situation.id)) ?? BTS_SITUATIONS[0]
+  const isLiveUnit = activeUnit.id === LIVE_UNIT_ID || activeUnit.id === BTS_UNIT_ID
   const unitLessons = getCurrentUnitLessons(activeUnit)
   const draft = parseSessionDraft(state.activityDraft)
   const dueCount = getDueCards(state.progress.reviewCards, today).length
@@ -110,6 +111,12 @@ export function LearnHome() {
           </button>
         </div>
 
+        {!isExploring && btsLesson && activeUnit.id !== BTS_UNIT_ID ? (
+          <a className="button button--secondary" href={`#/lesson/${btsLesson.id}`}>
+            Praticar com trechos do BTS
+          </a>
+        ) : null}
+
         {isExploring ? (
           <div className="unit-picker unit-picker--explore" role="tablist" aria-label="Unidades">
             {UNITS.map((unit) => {
@@ -125,7 +132,7 @@ export function LearnHome() {
                   className={`unit-chip${isSelected ? ' is-active' : ''}`}
                   onClick={() => setSelectedUnitId(unit.id)}
                 >
-                  <span className="unit-chip__number">{unit.id === LIVE_UNIT_ID ? 'Live' : unit.number}</span>
+                  <span className="unit-chip__number">{unit.id === BTS_UNIT_ID ? 'BTS' : unit.id === LIVE_UNIT_ID ? 'Live' : unit.number}</span>
                   <span className="unit-chip__progress">
                     {summary.completed}/{summary.total}
                   </span>

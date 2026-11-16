@@ -1,4 +1,4 @@
-import { LIVE_SITUATIONS, LESSONS, UNITS } from '../data'
+import { ALL_LIVE_SITUATIONS, LIVE_SITUATIONS, LESSONS, UNITS } from '../data'
 import type { Lesson, Unit } from '../data'
 import { findNextLesson, getLessonsOfUnit, getUnitOfLesson, summarizeUnit } from './catalog'
 import type { PracticeMode } from './session'
@@ -24,6 +24,7 @@ const PHASE_BY_UNIT: Readonly<Record<number, { label: string; hint: string }>> =
   5: { label: 'Palavras e conversa', hint: 'Saudações e pessoas: o coreano começa a fazer sentido.' },
   6: { label: 'Palavras do dia a dia', hint: 'Vocabulário para situações reais.' },
   7: { label: 'Seu mundo', hint: 'Cultura, viagem e interesses em coreano.' },
+  10: { label: 'Trechos do BTS', hint: 'Escute trechos, confira o sentido e pratique uma resposta.' },
   9: { label: 'Escuta e fala', hint: 'Reconheça expressões de uma live e pratique suas respostas.' },
   8: { label: 'Frases e leitura', hint: 'Montar frases e ler textos curtos com compreensão.' },
 }
@@ -107,7 +108,7 @@ export const PRACTICE_PILLARS: readonly {
     id: 'sound',
     title: 'Ouvir e falar',
     text: 'Escute e responda em situações de live.',
-    links: LIVE_SITUATIONS.map((situation) => ({
+    links: ALL_LIVE_SITUATIONS.map((situation) => ({
       href: `#/lesson/${situation.id}`,
       title: situation.title,
       description: situation.context,

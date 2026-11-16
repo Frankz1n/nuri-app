@@ -4,7 +4,7 @@ import { getLiveSituation } from '../../data/live'
 import type { ListeningAnswer } from '../../lib/session'
 import type { LiveDialogueStep, LiveListeningStep } from '../../lib/steps'
 import { VoiceRecorder } from '../pronounce/VoiceRecorder'
-import { LiveAudio } from './LiveAudio'
+import { LiveContextPicture, LivePlayback } from './LiveMedia'
 
 interface ListeningViewProps {
   step: LiveListeningStep
@@ -22,13 +22,15 @@ export function LiveListeningView({ step, answer, onAnswer, onContinue }: Listen
 
   const line = situation[step.take]
   const correct = answer?.option === step.answerIndex
-  const title = step.take === 'transfer' ? 'Reconheça em outra fala' : 'Ouça e escolha o sentido'
+  const title = step.take === 'transfer'
+    ? 'Reconheça em outra fala'
+    : line.video ? 'Assista e escolha o sentido' : 'Ouça e escolha o sentido'
 
   return (
     <div className="step live-step">
       <h2 className="step__title">{title}</h2>
       <p className="step__text">{step.take === 'opening' ? situation.context : 'Escute uma nova versão da expressão.'}</p>
-      <LiveAudio situation={situation} role={step.take} label={heard || answer?.unaided ? 'Ouvir de novo' : 'Ouvir em coreano'} onHeard={() => setHeard(true)} />
+      <LivePlayback situation={situation} role={step.take} label={heard || answer?.unaided ? 'Ouvir de novo' : 'Ouvir em coreano'} onHeard={() => setHeard(true)} />
       {!answer && !showText ? (
         <button type="button" className="button button--ghost" onClick={() => setShowText(true)}>Ver frase em hangul</button>
       ) : null}
@@ -93,22 +95,23 @@ export function LiveDialogueView({ step, onContinue }: DialogueViewProps) {
       <h2 className="step__title">{isReading ? 'Leia e acompanhe a fala' : 'Responda em voz alta'}</h2>
       {isReading ? (
         <>
+          {situation.picture ? <LiveContextPicture picture={situation.picture} /> : null}
           <div className="live-dialogue">
             <p className="live-line" lang="ko">{situation.opening.ko}</p>
             <p>{situation.opening.pt}</p>
           </div>
-          <LiveAudio situation={situation} role="opening" label="Ouvir enquanto leio" />
+          <LivePlayback situation={situation} role="opening" label="Ouvir enquanto leio" />
           <p>Procure <strong lang="ko">{situation.focus}</strong> dentro da frase.</p>
           <div className="live-dialogue live-dialogue--reply">
             <p className="live-line" lang="ko">{situation.reply.ko}</p>
             <p>{situation.reply.pt}</p>
           </div>
-          <LiveAudio situation={situation} role="reply" label="Ouvir a resposta" />
+          <LivePlayback situation={situation} role="reply" label="Ouvir a resposta" />
         </>
       ) : (
         <>
           <p className="step__text">Ouça a fala da live e responda em coreano. {situation.context}</p>
-          <LiveAudio situation={situation} role="opening" label="Ouvir a fala da live" />
+          <LivePlayback situation={situation} role="opening" label="Ouvir a fala da live" />
           <VoiceRecorder practiceMode />
           {showModel ? (
             <>
@@ -116,7 +119,7 @@ export function LiveDialogueView({ step, onContinue }: DialogueViewProps) {
                 <p className="live-line" lang="ko">{situation.reply.ko}</p>
                 <p>{situation.reply.pt}</p>
               </div>
-              <LiveAudio situation={situation} role="reply" label="Ouvir o modelo" />
+              <LivePlayback situation={situation} role="reply" label="Ouvir o modelo" />
             </>
           ) : (
             <button type="button" className="button button--secondary" onClick={() => setShowModel(true)}>Ver resposta modelo</button>

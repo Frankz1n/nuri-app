@@ -59,3 +59,7 @@ As três primeiras aulas trabalham cumprimentos, teste de som e agradecimento. C
 - Validação manual: em um aparelho com voz coreana local ou build com clipes, entre na primeira aula, ouça até o fim, escolha uma opção e confira. Recarregue no feedback e confirme que a resposta foi mantida. Leia, grave e compare, tente a fala nova e faça a escrita. Repita o teste sem microfone ou sem voz local para verificar as alternativas.
 
 Os contratos existentes em `src/lib/audio` continuam disponíveis para integrações futuras com biblioteca ampliada, análise de pronúncia e conversação.
+
+## Mídia nas aulas
+
+[Veja como cadastrar trechos na trilha Trechos do BTS](src/assets/live-media/README.md). O aluno assiste em coreano, responde e confere o texto e o sentido da fala. A lição pode usar uma imagem para contextualizar a leitura e um segundo trecho na checagem de compreensão. A unidade aparece quando o catálogo recebe as primeiras mídias aprovadas.
