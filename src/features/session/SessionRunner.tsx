@@ -1,11 +1,25 @@
 import { useRef, useState } from 'react'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { LessonLayout } from '../../components/LessonLayout'
+import type { SkillGlyph } from '../../components/icons'
 import type { ListeningAnswer, SessionDraftPayload } from '../../lib/session'
 import type { Step } from '../../lib/steps'
 import { useNuri } from '../../state/useNuri'
 import { LiveDialogueView, LiveListeningView } from './LiveViews'
 import { CardView, ChoiceView, InfoView, PairsView, ReadView, TilesView, WriteView } from './StepViews'
+
+const STEP_ACTIVITY: Record<Step['kind'], { glyph: SkillGlyph; label: string }> = {
+  info: { glyph: 'read', label: 'Conhecer' },
+  read: { glyph: 'read', label: 'Leitura' },
+  choice: { glyph: 'read', label: 'Compreensão' },
+  tiles: { glyph: 'blocks', label: 'Montagem' },
+  write: { glyph: 'write', label: 'Escrita' },
+  pairs: { glyph: 'blocks', label: 'Associar' },
+  card: { glyph: 'review', label: 'Revisão' },
+  'live-listen': { glyph: 'listen', label: 'Escuta' },
+  'live-read': { glyph: 'read', label: 'Leitura' },
+  'live-speak': { glyph: 'speak', label: 'Fala' },
+}
 
 export interface SessionSummary {
   gradedCount: number
@@ -94,6 +108,7 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
         title={title}
         stepIndex={index}
         stepCount={session.steps.length}
+        activity={STEP_ACTIVITY[step.kind]}
         onExit={() => setIsExitDialogOpen(true)}
       >
         {/* A chave reinicia o estado local de cada passo. */}

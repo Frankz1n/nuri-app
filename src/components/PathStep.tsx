@@ -1,46 +1,36 @@
-import type { ReactNode } from 'react'
-import { CheckIcon } from './icons'
+import { CheckIcon, ChevronIcon, SkillIcon } from './icons'
+import type { SkillGlyph } from './icons'
 
 export type PathStepStatus = 'done' | 'current' | 'upcoming' | 'draft'
 
 interface PathStepProps {
-  index: number
   label: string
-  meta?: string
+  meta: string
+  glyph: SkillGlyph
   status: PathStepStatus
   href: string
-  offset?: 'left' | 'center' | 'right'
 }
 
-const STATUS_LABEL: Record<PathStepStatus, string> = {
-  done: 'Concluída',
-  current: 'Próxima',
-  upcoming: 'Em breve',
-  draft: 'Em andamento',
-}
-
-export function PathStep({ index, label, meta, status, href, offset = 'center' }: PathStepProps) {
-  const content: ReactNode = (
-    <>
-      <span className={`path-node path-node--${status}`} aria-hidden="true">
-        {status === 'done' ? <CheckIcon size={22} /> : index}
-      </span>
-      <span className="path-node__copy">
-        <span className="path-node__label">{label}</span>
-        <span className="path-node__meta">{meta ?? STATUS_LABEL[status]}</span>
-      </span>
-    </>
-  )
-
+export function PathStep({ label, meta, glyph, status, href }: PathStepProps) {
+  const active = status === 'current' || status === 'draft'
   return (
-    <div className={`path-step path-step--${offset} path-step--${status}`}>
-      <a
-        className="path-step__hit"
-        href={href}
-        aria-current={status === 'current' || status === 'draft' ? 'step' : undefined}
-      >
-        {content}
-      </a>
-    </div>
+    <a
+      className={`study-node study-node--${status} study-node--${glyph}`}
+      href={href}
+      aria-current={active ? 'step' : undefined}
+    >
+      <span className="study-node__icon" aria-hidden="true">
+        {status === 'done' ? <CheckIcon size={27} /> : <SkillIcon kind={glyph} size={27} />}
+      </span>
+      <span className="study-node__copy">
+        <span className="study-node__label">{label}</span>
+        <span className="study-node__meta">{meta}</span>
+        {active ? (
+          <span className="study-node__action">
+            {status === 'draft' ? 'Continuar' : 'Começar'} <ChevronIcon size={15} />
+          </span>
+        ) : null}
+      </span>
+    </a>
   )
 }

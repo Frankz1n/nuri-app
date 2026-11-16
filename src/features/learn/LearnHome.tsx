@@ -1,191 +1,149 @@
 import { useEffect, useRef, useState } from 'react'
 import { BTS_SITUATIONS, BTS_UNIT_ID, LIVE_UNIT_ID, UNITS } from '../../data'
-import { XP_LESSON_FIRST, getDueCards, todayKey } from '../../core'
+import type { Lesson, Unit } from '../../data'
+import { getDueCards, todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
 import { PathStep } from '../../components/PathStep'
 import type { PathStepStatus } from '../../components/PathStep'
-import { FlameIcon } from '../../components/icons'
-import { LESSON_KIND_LABELS } from '../../lib/catalog'
+import { ChevronIcon, FlameIcon, SkillIcon } from '../../components/icons'
+import type { SkillGlyph } from '../../components/icons'
+import { ProgressBar } from '../../components/ProgressBar'
+import { LESSON_KIND_LABELS, summarizeUnit } from '../../lib/catalog'
 import { buildGuidedStudyPlan, getCurrentUnitLessons } from '../../lib/studyPath'
 import { describeOrigin, originRoute, parseSessionDraft } from '../../lib/session'
 import { useNuri } from '../../state/useNuri'
 import { getDisplayedStreak } from '../../state/transitions'
 
+const LESSON_GLYPHS: Record<Lesson['kind'], SkillGlyph> = {
+  live: 'listen', letter: 'write', review: 'review', syllable: 'blocks',
+  batchim: 'blocks', vocab: 'read', phrase: 'read', reading: 'read',
+}
+
+function glyphForLesson(lesson: Lesson, isVideoUnit: boolean): SkillGlyph {
+  if (isVideoUnit) return 'video'
+  if (lesson.id === 'live-cumprimentar' || lesson.id === 'live-agradecer') return 'speak'
+  return LESSON_GLYPHS[lesson.kind]
+}
+
+function UnitBanner({ unit, completed, total }: { unit: Unit; completed: number; total: number }) {
+  const isBts = unit.id === BTS_UNIT_ID
+  const isLive = unit.id === LIVE_UNIT_ID
+  return (
+    <section className="study-unit" aria-labelledby="study-unit-title">
+      <div className="study-unit__copy">
+        <p className="study-unit__category">{isBts ? 'Coreano em vídeo' : isLive ? 'Escuta e fala' : `Unidade ${unit.number}`}</p>
+        <h2 id="study-unit-title">{unit.title}</h2>
+        <div className="study-unit__progress">
+          <ProgressBar value={completed} max={total} label="Lições concluídas nesta unidade" isCompact />
+          <span aria-hidden="true">{completed}/{total}</span>
+        </div>
+      </div>
+      <div className="study-unit__art" aria-hidden="true">
+        <span className="study-unit__glyph"><SkillIcon kind={isBts ? 'video' : isLive ? 'listen' : 'blocks'} size={30} /></span>
+        <span className="study-unit__hangul" lang="ko">{isBts || isLive ? '말' : '한'}</span>
+      </div>
+    </section>
+  )
+}
+
 export function LearnHome() {
-  const { state, actions } = useNuri()
+  const { state } = useNuri()
   const today = todayKey()
   const { completedLessons } = state.progress
   const plan = buildGuidedStudyPlan(completedLessons)
-  const [isExploring, setIsExploring] = useState(false)
-  const [selectedUnitId, setSelectedUnitId] = useState<string>(() => plan.currentUnit?.id ?? UNITS[0].id)
-  const currentNodeRef = useRef<HTMLLIElement | null>(null)
-
-  const activeUnit = isExploring
-    ? (UNITS.find((unit) => unit.id === selectedUnitId) ?? plan.currentUnit ?? UNITS[0])
-    : (plan.currentUnit ?? UNITS[0])
-  const btsLesson = BTS_SITUATIONS.find((situation) => !completedLessons.includes(situation.id)) ?? BTS_SITUATIONS[0]
-  const isLiveUnit = activeUnit.id === LIVE_UNIT_ID || activeUnit.id === BTS_UNIT_ID
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
+  const currentNode = useRef<HTMLLIElement>(null)
+  const activeUnit = UNITS.find((unit) => unit.id === selectedUnitId) ?? plan.currentUnit ?? UNITS[0]
+  const showingOtherUnit = selectedUnitId !== null && activeUnit.id !== plan.currentUnit?.id
   const unitLessons = getCurrentUnitLessons(activeUnit)
+  const unitProgress = summarizeUnit(activeUnit, completedLessons)
   const draft = parseSessionDraft(state.activityDraft)
+  const draftLessonId = draft?.origin.type === 'lesson' ? draft.origin.lessonId : undefined
+  const draftOnPath = unitLessons.some((lesson) => lesson.id === draftLessonId)
   const dueCount = getDueCards(state.progress.reviewCards, today).length
   const errorCount = state.progress.errorQueue.length
   const streak = getDisplayedStreak(state.progress, today)
-  const hasReviewWork = dueCount > 0 || errorCount > 0
-  const draftIsCurrentLesson =
-    draft?.origin.type === 'lesson' && plan.nextLesson ? draft.origin.lessonId === plan.nextLesson.id : false
+  const pendingReviews = dueCount + errorCount
+  const nextId = plan.nextLesson?.id
+  const currentIndex = unitLessons.findIndex((lesson) => lesson.id === (draftOnPath ? draftLessonId : nextId))
+  const btsLesson = BTS_SITUATIONS.find((situation) => !completedLessons.includes(situation.id)) ?? BTS_SITUATIONS[0]
 
   useEffect(() => {
-    if (isExploring) return
-    currentNodeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [activeUnit.id, plan.nextLesson?.id, draft?.origin, isExploring])
-
-  const primaryHref = draft ? originRoute(draft.origin) : plan.nextLesson ? `#/lesson/${plan.nextLesson.id}` : '#/practice'
-  const primaryLabel = draft ? 'Continuar' : plan.nextLesson ? 'Começar' : 'Ir para Praticar'
-  const primaryTitle = draft
-    ? describeOrigin(draft.origin)
-    : plan.nextLesson
-      ? plan.nextLesson.title
-      : 'Trilha concluída'
-  const primaryMeta = draft
-    ? `Em andamento · passo ${draft.index + 1} de ${draft.steps.length}`
-    : plan.nextLesson
-      ? plan.nextLesson.kind === 'live'
-        ? 'Escute a fala, acompanhe o texto e pratique sua resposta.'
-        : `${LESSON_KIND_LABELS[plan.nextLesson.kind]} · +${XP_LESSON_FIRST} XP na primeira vez`
-      : 'Use Praticar para reforçar o que aprendeu.'
+    if (currentIndex >= 3 && !showingOtherUnit) currentNode.current?.scrollIntoView({ block: 'nearest' })
+  }, [activeUnit.id, currentIndex, showingOtherUnit])
 
   return (
-    <div className="screen screen--path">
+    <div className="screen screen--study">
       <AppHeader
         showBrand
         title="Nuri"
-        subtitle={streak > 0 ? `Sequência · ${streak} ${streak === 1 ? 'dia' : 'dias'}` : 'Coreano para ouvir, falar, ler e escrever'}
-        actions={
-          streak > 0 ? (
-            <span className="chip chip--accent" aria-hidden="true">
-              <FlameIcon size={18} /> {streak}
-            </span>
-          ) : null
-        }
-      />
-
-      <section className="path-hero" aria-labelledby="unit-objective">
-        <p id="unit-objective" className="path-hero__unit">
-          {isLiveUnit ? activeUnit.title : `Unidade ${activeUnit.number} · ${activeUnit.title}`}
-        </p>
-        <h2 className="path-hero__title">{primaryTitle}</h2>
-        <p className="path-hero__meta">{primaryMeta}</p>
-        <div className="path-hero__actions">
-          <a className="button button--primary button--block" href={primaryHref}>
-            {primaryLabel}
+        subtitle="Coreano"
+        actions={streak > 0 ? (
+          <a className="study-streak" href="#/profile/progress" aria-label={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}>
+            <FlameIcon size={20} /> {streak}
           </a>
-          {draft ? (
-            <button type="button" className="button button--ghost button--block" onClick={actions.clearDraft}>
-              Descartar rascunho
-            </button>
-          ) : null}
-        </div>
-      </section>
+        ) : undefined}
+      />
+      <UnitBanner unit={activeUnit} completed={unitProgress.completed} total={unitProgress.total} />
 
-      {hasReviewWork ? (
-        <a className="path-review" href="#/review">
-          <span className="path-review__label">Revisar</span>
-          <span className="path-review__meta">
-            {dueCount > 0 ? `${dueCount} ${dueCount === 1 ? 'cartão' : 'cartões'}` : null}
-            {dueCount > 0 && errorCount > 0 ? ' · ' : null}
-            {errorCount > 0 ? `${errorCount} ${errorCount === 1 ? 'erro' : 'erros'}` : null}
-          </span>
+      {draft && !draftOnPath ? (
+        <a className="study-quick" href={originRoute(draft.origin)}>
+          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
+          <span><strong>Continuar atividade</strong><small>{describeOrigin(draft.origin)} · passo {draft.index + 1}</small></span>
+          <ChevronIcon size={19} />
         </a>
       ) : null}
 
-      <section className="path-trail" aria-labelledby="path-title">
-        <div className="path-trail__header">
-          <div>
-            <h2 id="path-title" className="path-trail__heading">
-              {isExploring ? activeUnit.title : 'Sua trilha'}
-            </h2>
-            <p className="path-trail__sub">{activeUnit.description}</p>
-          </div>
-          <button type="button" className="button button--ghost" onClick={() => setIsExploring((value) => !value)}>
-            {isExploring ? 'Voltar' : 'Explorar unidades'}
-          </button>
+      <section className="study-path" aria-labelledby="study-path-title">
+        <div className="study-path__header">
+          <h2 id="study-path-title">Sua trilha</h2>
+          <label className="study-unit-picker">
+            <span className="visually-hidden">Explorar unidades</span>
+            <select value={selectedUnitId ?? ''} onChange={(event) => setSelectedUnitId(event.target.value || null)}>
+              <option value="">Explorar unidades</option>
+              {UNITS.map((unit) => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
+            </select>
+          </label>
         </div>
-
-        {!isExploring && btsLesson && activeUnit.id !== BTS_UNIT_ID ? (
-          <a className="button button--secondary" href={`#/lesson/${btsLesson.id}`}>
-            Praticar com trechos do BTS
-          </a>
-        ) : null}
-
-        {isExploring ? (
-          <div className="unit-picker unit-picker--explore" role="tablist" aria-label="Unidades">
-            {UNITS.map((unit) => {
-              const summary = summarizeForChip(unit.id, completedLessons)
-              const isSelected = unit.id === activeUnit.id
-              return (
-                <button
-                  key={unit.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSelected}
-                  aria-label={unit.title}
-                  className={`unit-chip${isSelected ? ' is-active' : ''}`}
-                  onClick={() => setSelectedUnitId(unit.id)}
-                >
-                  <span className="unit-chip__number">{unit.id === BTS_UNIT_ID ? 'BTS' : unit.id === LIVE_UNIT_ID ? 'Live' : unit.number}</span>
-                  <span className="unit-chip__progress">
-                    {summary.completed}/{summary.total}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        ) : null}
-
-        <ol className="path-nodes">
+        <ol className="study-path__steps">
           {unitLessons.map((lesson, index) => {
             const isDone = completedLessons.includes(lesson.id)
-            const isDraftHere = draft?.origin.type === 'lesson' && draft.origin.lessonId === lesson.id
-            const isNext = !isDone && plan.nextLesson?.id === lesson.id
-            const status: PathStepStatus = isDraftHere ? 'draft' : isDone ? 'done' : isNext ? 'current' : 'upcoming'
-            const offset = index % 3 === 0 ? 'left' : index % 3 === 1 ? 'center' : 'right'
-            const isFocusNode = isDraftHere || (isNext && !draft) || (draftIsCurrentLesson && isNext)
+            const isDraft = draftLessonId === lesson.id
+            const isNext = !draft && lesson.id === nextId && !isDone
+            const status: PathStepStatus = isDraft ? 'draft' : isDone ? 'done' : isNext ? 'current' : 'upcoming'
+            const meta = isDraft && draft
+              ? `Passo ${draft.index + 1} de ${draft.steps.length}`
+              : isDone ? 'Concluída · revisar' : LESSON_KIND_LABELS[lesson.kind]
             return (
-              <li
-                key={lesson.id}
-                ref={isFocusNode ? currentNodeRef : undefined}
-                className={`path-nodes__item path-nodes__item--${offset}`}
-              >
+              <li key={lesson.id} ref={index === currentIndex ? currentNode : undefined}>
                 <PathStep
-                  index={index + 1}
                   label={lesson.title}
-                  meta={
-                    isDraftHere
-                      ? 'Em andamento'
-                      : isDone
-                        ? 'Concluída · revisar'
-                        : isNext
-                          ? 'Próxima'
-                          : LESSON_KIND_LABELS[lesson.kind]
-                  }
+                  meta={meta}
+                  glyph={glyphForLesson(lesson, activeUnit.id === BTS_UNIT_ID)}
                   status={status}
                   href={`#/lesson/${lesson.id}`}
-                  offset={offset}
                 />
               </li>
             )
           })}
         </ol>
       </section>
+
+      {pendingReviews > 0 ? (
+        <a className="study-quick study-quick--coral" href="#/review">
+          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
+          <span><strong>Revisar agora</strong><small>{pendingReviews} {pendingReviews === 1 ? 'item pendente' : 'itens pendentes'}</small></span>
+          <ChevronIcon size={19} />
+        </a>
+      ) : null}
+      {btsLesson && activeUnit.id !== BTS_UNIT_ID ? (
+        <a className="study-quick" href={`#/lesson/${btsLesson.id}`}>
+          <span className="study-quick__symbol"><SkillIcon kind="video" size={21} /></span>
+          <strong>Praticar com trechos do BTS</strong>
+          <ChevronIcon size={19} />
+        </a>
+      ) : null}
+      {!nextId ? <a className="button button--primary button--block" href="#/practice">Reforçar o que aprendi</a> : null}
     </div>
   )
-}
-
-const summarizeForChip = (unitId: string, completedLessons: readonly string[]) => {
-  const unit = UNITS.find((item) => item.id === unitId)
-  if (!unit) return { completed: 0, total: 0 }
-  return {
-    completed: unit.lessonIds.filter((lessonId) => completedLessons.includes(lessonId)).length,
-    total: unit.lessonIds.length,
-  }
 }

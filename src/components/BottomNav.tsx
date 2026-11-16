@@ -28,7 +28,7 @@ export function BottomNav({ activeTab }: { activeTab: TabId | null }) {
               className={`bottom-nav__link${tab.id === activeTab ? ' is-active' : ''}`}
               aria-current={tab.id === activeTab ? 'page' : undefined}
             >
-              {tab.icon}
+              <span className={`bottom-nav__icon bottom-nav__icon--${tab.id}`}>{tab.icon}</span>
               <span>{tab.label}</span>
             </a>
           </li>
