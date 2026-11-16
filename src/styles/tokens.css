@@ -1,0 +1,126 @@
+:root {
+  /* Identidade Nuri — trilha guiada, superfícies sólidas */
+  --color-cream: #faf7ef;
+  --color-cream-deep: #f0ebe0;
+  --color-white: #ffffff;
+  --color-ink: #174635;
+  --color-ink-muted: #5a7266;
+  --color-border: #dedcd2;
+  --color-green: #237a53;
+  --color-green-deep: #185c3e;
+  --color-green-soft: #e3f2ea;
+  --color-coral: #e85d4c;
+  --color-coral-deep: #c4412b;
+  --color-coral-soft: #fde8e2;
+  --color-yellow: #f5c842;
+  --color-yellow-soft: #fff4c8;
+  --color-green-dark: #185c3e;
+  --color-green-mid: #237a53;
+  --color-peach: #fde8e2;
+
+  --bg: var(--color-cream);
+  --bg-glow: none;
+  --surface: var(--color-white);
+  --surface-solid: var(--color-white);
+  --surface-alt: var(--color-green-soft);
+  --text: var(--color-ink);
+  --text-muted: var(--color-ink-muted);
+  --border: var(--color-border);
+  --border-soft: var(--color-border);
+  --primary: var(--color-green);
+  --primary-deep: var(--color-green-deep);
+  --on-primary: #ffffff;
+  --primary-soft: var(--color-green-soft);
+  --primary-gradient: var(--color-green);
+  --accent: var(--color-coral-deep);
+  --on-accent: #ffffff;
+  --accent-soft: var(--color-coral-soft);
+  --success-bg: #e3f2ea;
+  --success-fg: #174635;
+  --error-bg: #fde8e2;
+  --error-fg: #9a2f1f;
+  --info-bg: #eef2f0;
+  --info-fg: #174635;
+  --focus-ring: #237a53;
+  --overlay: rgba(23, 70, 53, 0.45);
+
+  --canvas-grid: #e8e4d8;
+  --canvas-guide: #8fbfa3;
+  --canvas-ink: #174635;
+  --canvas-accent: #e85d4c;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-pill: 999px;
+  --btn-radius: 14px;
+  --btn-height: 3.375rem;
+  --btn-depth: 4px;
+  --shadow-card: none;
+  --shadow-soft: none;
+  --shadow-nav: none;
+  --font-display: 'Nunito', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-korean: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Nanum Gothic', 'Nunito', system-ui, sans-serif;
+
+  --touch-min: 2.75rem;
+  --content-width: 26.5rem;
+  --nav-height: 4rem;
+  --path-node: 3.75rem;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  color-scheme: light;
+}
+
+html.dark {
+  --bg: #0f1914;
+  --surface: #1a2821;
+  --surface-solid: #1a2821;
+  --surface-alt: #24352c;
+  --text: #e8f3ec;
+  --text-muted: #a3b8ac;
+  --border: #2f4338;
+  --border-soft: #2f4338;
+  --primary: #3d9b6a;
+  --primary-deep: #2d7a52;
+  --on-primary: #ffffff;
+  --primary-soft: #24352c;
+  --primary-gradient: #3d9b6a;
+  --accent: #ff8f7a;
+  --on-accent: #2b0e08;
+  --accent-soft: #4a2a24;
+  --success-bg: #1f3a2c;
+  --success-fg: #c8ecd3;
+  --error-bg: #4a2a24;
+  --error-fg: #ffd2c8;
+  --info-bg: #1f2e3d;
+  --info-fg: #cfe0f2;
+  --focus-ring: #7db8ff;
+  --overlay: rgba(0, 0, 0, 0.65);
+  --canvas-grid: #3a4d43;
+  --canvas-guide: #4e7a5f;
+  --canvas-ink: #bfe8cc;
+  --canvas-accent: #ff8f7a;
+  color-scheme: dark;
+}
+
+html.large-text {
+  font-size: 125%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --btn-depth: 2px;
+  }
+}

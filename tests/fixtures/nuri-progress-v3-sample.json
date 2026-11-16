@@ -1,0 +1,62 @@
+{
+  "format": "nuri-progress",
+  "version": 3,
+  "exportedAt": "2026-11-10T21:30:00.000Z",
+  "state": {
+    "profile": {
+      "name": "Frank",
+      "interest": "k-pop",
+      "familiarity": "iniciante",
+      "dailyGoalMinutes": 15,
+      "xpGoal": 80,
+      "showRomanization": true,
+      "darkMode": true,
+      "largeText": false,
+      "reduceMotion": false,
+      "onboardingDone": true
+    },
+    "progress": {
+      "xp": 235,
+      "streak": 6,
+      "lastStudyDay": "2026-11-10",
+      "completedLessons": [
+        "lesson-u1-01",
+        "lesson-u1-02",
+        "lesson-u1-03",
+        "lesson-u1-04",
+        "lesson-u1-05",
+        "lesson-u2-01",
+        "lesson-u5-01",
+        "lesson-old-removed"
+      ],
+      "lessonCompletions": {
+        "lesson-u1-01": "2026-11-05",
+        "lesson-u1-02": "2026-11-05",
+        "lesson-u1-03": "2026-11-06",
+        "lesson-u1-04": "2026-11-07",
+        "lesson-u1-05": "2026-11-08",
+        "lesson-u2-01": "2026-11-09",
+        "lesson-u5-01": "2026-11-10",
+        "lesson-old-removed": "2026-11-01"
+      },
+      "unitProgress": { "unit-1": 5, "unit-2": 1, "unit-5": 1 },
+      "favorites": ["vocab-annyeonghaseyo", "vocab-gamsahamnida", "vocab-jip"],
+      "reviewCards": [
+        { "vocabId": "vocab-annyeonghaseyo", "intervalIndex": 2, "dueDate": "2026-11-17", "lastResult": "remembered" },
+        { "vocabId": "vocab-gamsahamnida", "intervalIndex": 1, "dueDate": "2026-11-13", "lastResult": "remembered" },
+        { "vocabId": "vocab-jip", "intervalIndex": 0, "dueDate": "2026-11-10", "lastResult": "forgotten" }
+      ],
+      "skillFirstTry": {
+        "letters": { "hits": 14, "total": 20 },
+        "vocabulary": { "hits": 6, "total": 9 }
+      },
+      "dailyXpAwards": { "practice-match": "2026-11-10", "practice-daily": "2026-11-10" },
+      "achievements": ["first-lesson", "streak-3"],
+      "history": [
+        { "day": "2026-11-08", "xp": 40, "lessons": 2 },
+        { "day": "2026-11-09", "xp": 45, "lessons": 1 },
+        { "day": "2026-11-10", "xp": 60, "lessons": 1 }
+      ]
+    }
+  }
+}
