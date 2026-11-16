@@ -2,8 +2,8 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const BRAND_GREEN = '#1f4d3a'
-const BRAND_CREAM = '#fbf6ea'
+const BRAND_GREEN = '#184834'
+const BRAND_CREAM = '#fff7e9'
 
 // https://vite.dev/config/
 export default defineConfig({

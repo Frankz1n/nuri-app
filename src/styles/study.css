@@ -1,24 +1,30 @@
 /* Shared study surfaces and skill accents. */
 :root {
-  --study-green: #267550;
-  --study-green-deep: #145037;
-  --study-mint: #dceee1;
-  --study-mint-ink: #155136;
-  --study-coral: #f5d5c9;
-  --study-coral-ink: #903b2b;
-  --study-gold: #f5e5aa;
-  --study-gold-ink: #654714;
-  --study-rail: #dbddd1;
+  --study-mint: var(--color-green-soft);
+  --study-mint-ink: var(--color-ink);
+  --study-coral: var(--color-coral-soft);
+  --study-coral-ink: #863b2d;
+  --study-gold: var(--color-yellow-soft);
+  --study-gold-ink: #694217;
+  --study-rail: var(--color-border);
+  --study-mascot-bg: #f9dbad;
+  --study-mascot-edge: #dbab72;
+  --study-mascot-ink: var(--color-ink);
+  --study-mascot-track: #956d46;
 }
 
 html.dark {
-  --study-mint: #294c3a;
-  --study-mint-ink: #b9efd0;
-  --study-coral: #532e27;
-  --study-coral-ink: #ffc7b8;
-  --study-gold: #473d21;
-  --study-gold-ink: #ffe3a1;
-  --study-rail: #36483c;
+  --study-mint: var(--primary-soft);
+  --study-mint-ink: #c3e7cc;
+  --study-coral: #4c3028;
+  --study-coral-ink: #ffd0bf;
+  --study-gold: #493a26;
+  --study-gold-ink: #ffdfa9;
+  --study-rail: var(--border);
+  --study-mascot-bg: #433425;
+  --study-mascot-edge: #7d5e3e;
+  --study-mascot-ink: #fff0d8;
+  --study-mascot-track: #a68661;
 }
 
 .visually-hidden {
@@ -59,12 +65,12 @@ html.dark {
   width: 2.12rem;
   height: 2.25rem;
   border-radius: 0.65rem;
-  border-bottom: 3px solid #123b2a;
+  border-bottom: 3px solid var(--primary-deep);
   font-size: 1rem;
 }
 
 .screen--study .brand-mark__block--soft {
-  border-color: #a9cbb2;
+  border-color: color-mix(in srgb, var(--study-mint-ink) 28%, var(--study-mint));
 }
 
 .study-streak {
@@ -84,6 +90,12 @@ html.dark {
 }
 
 .study-unit {
+  --unit-background: var(--color-green-deep);
+  --unit-border: #113426;
+  --unit-ink: var(--color-cream);
+  --unit-progress-track: #759484;
+  --unit-progress-fill: var(--color-yellow);
+
   position: relative;
   isolation: isolate;
   display: grid;
@@ -93,11 +105,28 @@ html.dark {
   gap: 0.75rem;
   padding: 1rem 1rem 1.05rem 1.15rem;
   overflow: hidden;
-  border: 1px solid #196043;
-  border-bottom: 5px solid #103e2a;
+  border: 1px solid var(--unit-border);
+  border-bottom-width: 5px;
   border-radius: 1.25rem;
-  background: #175b3e;
-  color: #fffdf3;
+  background: var(--unit-background);
+  color: var(--unit-ink);
+}
+
+.study-unit--horangi {
+  --unit-background: var(--study-mascot-bg);
+  --unit-border: var(--study-mascot-edge);
+  --unit-ink: var(--study-mascot-ink);
+  --unit-progress-track: var(--study-mascot-track);
+  --unit-progress-fill: var(--study-mascot-ink);
+
+  min-height: 9.75rem;
+  padding-block: 0.65rem;
+}
+
+.study-unit__mascot {
+  display: block;
+  width: clamp(6rem, 32vw, 8rem);
+  height: auto;
 }
 
 .study-unit__copy {
@@ -108,7 +137,6 @@ html.dark {
 }
 
 .study-unit__category {
-  color: #d7ecdb;
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -129,18 +157,17 @@ html.dark {
   justify-content: start;
   gap: 0.5rem;
   margin-top: 0.35rem;
-  color: #f7f5e8;
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .study-unit__progress .progress {
   height: 0.42rem;
-  background: #407e62;
+  background: var(--unit-progress-track);
 }
 
 .study-unit__progress .progress__fill {
-  background: #f5db92;
+  background: var(--unit-progress-fill);
 }
 
 .study-unit__art {
@@ -162,19 +189,19 @@ html.dark {
 .study-unit__glyph {
   top: 0.1rem;
   left: 0;
-  border-bottom: 4px solid #86b696;
+  border-bottom: 4px solid color-mix(in srgb, var(--study-mint-ink) 30%, var(--study-mint));
   transform: rotate(-12deg);
-  background: #bde0ba;
-  color: #164e36;
+  background: var(--study-mint);
+  color: var(--study-mint-ink);
 }
 
 .study-unit__hangul {
   right: 0;
   bottom: 0.15rem;
-  border-bottom: 4px solid #d69076;
+  border-bottom: 4px solid color-mix(in srgb, var(--study-coral-ink) 30%, var(--study-coral));
   transform: rotate(12deg);
-  background: #f5c0aa;
-  color: #733526;
+  background: var(--study-coral);
+  color: var(--study-coral-ink);
   font-size: 1.65rem;
   font-weight: 800;
 }
@@ -291,9 +318,9 @@ html.dark {
 
 .study-node--current .study-node__icon,
 .study-node--draft .study-node__icon {
-  border-color: var(--study-green-deep);
-  background: var(--study-green);
-  color: #fffef6;
+  border-color: var(--primary-deep);
+  background: var(--primary);
+  color: var(--on-primary);
   box-shadow: 0 0 0 3px var(--surface);
 }
 

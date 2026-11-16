@@ -23,8 +23,8 @@ const CLASS_BY_PROFILE_FLAG = [
   ['reduce-motion', 'reduceMotion'],
 ] as const
 
-const THEME_COLOR_LIGHT = '#1f4d3a'
-const THEME_COLOR_DARK = '#121b17'
+const THEME_COLOR_LIGHT = '#184834'
+const THEME_COLOR_DARK = '#14231c'
 
 export function NuriProvider({ children }: { children: ReactNode }) {
   const [initialLoad] = useState(() => loadStateResult())
