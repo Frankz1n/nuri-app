@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MASCOT_POSES } from '../../assets/mascot/poses'
-import { BTS_SITUATIONS, BTS_UNIT_ID, LIVE_UNIT_ID, UNITS } from '../../data'
-import type { Lesson, Unit } from '../../data'
+import { CURRICULUM_STAGES, CURRICULUM_WEEKS, getWeekByNumber } from '../../data'
+import type { CurriculumSession } from '../../data'
 import { getDueCards, todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
 import { PathStep } from '../../components/PathStep'
@@ -9,42 +9,45 @@ import type { PathStepStatus } from '../../components/PathStep'
 import { ChevronIcon, FlameIcon, SkillIcon } from '../../components/icons'
 import type { SkillGlyph } from '../../components/icons'
 import { ProgressBar } from '../../components/ProgressBar'
-import { LESSON_KIND_LABELS, summarizeUnit } from '../../lib/catalog'
-import { buildGuidedStudyPlan, getCurrentUnitLessons } from '../../lib/studyPath'
+import { buildGuidedCurriculumPlan } from '../../lib/curriculumPath'
 import { describeOrigin, originRoute, parseSessionDraft } from '../../lib/session'
 import { useNuri } from '../../state/useNuri'
 import { getDisplayedStreak } from '../../state/transitions'
 
-const LESSON_GLYPHS: Record<Lesson['kind'], SkillGlyph> = {
-  speak: 'speak', live: 'listen', letter: 'write', review: 'review', syllable: 'blocks',
-  batchim: 'blocks', vocab: 'read', phrase: 'read', reading: 'read',
+const SKILL_GLYPHS: Record<CurriculumSession['skillFocus'], SkillGlyph> = {
+  listen: 'listen',
+  read: 'read',
+  speak: 'speak',
+  write: 'write',
+  transfer: 'review',
 }
 
-function glyphForLesson(lesson: Lesson, isVideoUnit: boolean): SkillGlyph {
-  if (isVideoUnit) return 'video'
-  if (lesson.id === 'live-cumprimentar' || lesson.id === 'live-agradecer') return 'speak'
-  return LESSON_GLYPHS[lesson.kind]
-}
+const DAY_SHORT = ['D1', 'D2', 'D3', 'D4', 'D5'] as const
 
-function UnitBanner({ unit, completed, total }: { unit: Unit; completed: number; total: number }) {
-  const isBts = unit.id === BTS_UNIT_ID
-  const isLive = unit.id === LIVE_UNIT_ID
+function WeekBanner({
+  phaseLabel,
+  weekLabel,
+  phaseHint,
+  completed,
+  total,
+}: {
+  phaseLabel: string
+  weekLabel: string
+  phaseHint: string
+  completed: number
+  total: number
+}) {
   return (
     <section className="study-unit study-unit--horangi" aria-labelledby="study-unit-title">
       <div className="study-unit__copy">
-        <p className="study-unit__category">
-          {isBts
-            ? 'Coreano em vídeo'
-            : isLive
-              ? 'Escuta e fala'
-              : unit.number === 0
-                ? 'Fala primeiro'
-                : `Seção 1 · Unidade ${unit.number}`}
-        </p>
-        <h2 id="study-unit-title">{unit.title}</h2>
+        <p className="study-unit__category">{phaseLabel}</p>
+        <h2 id="study-unit-title">{weekLabel}</h2>
+        <p className="study-unit__hint">{phaseHint}</p>
         <div className="study-unit__progress">
-          <ProgressBar value={completed} max={total} label="Lições concluídas nesta unidade" isCompact />
-          <span aria-hidden="true">{completed}/{total}</span>
+          <ProgressBar value={completed} max={Math.max(1, total)} label="Sessões da semana" isCompact />
+          <span aria-hidden="true">
+            {completed}/{total}
+          </span>
         </div>
       </div>
       <img
@@ -62,78 +65,164 @@ export function LearnHome() {
   const { state } = useNuri()
   const today = todayKey()
   const { completedLessons } = state.progress
-  const plan = buildGuidedStudyPlan(completedLessons)
-  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null)
+  const [selectedStageId, setSelectedStageId] = useState<number | null>(null)
+  const plan = buildGuidedCurriculumPlan(completedLessons, selectedWeek)
   const currentNode = useRef<HTMLLIElement>(null)
-  const activeUnit = UNITS.find((unit) => unit.id === selectedUnitId) ?? plan.currentUnit ?? UNITS[0]
-  const showingOtherUnit = selectedUnitId !== null && activeUnit.id !== plan.currentUnit?.id
-  const unitLessons = getCurrentUnitLessons(activeUnit)
-  const unitProgress = summarizeUnit(activeUnit, completedLessons)
   const draft = parseSessionDraft(state.activityDraft)
   const draftLessonId = draft?.origin.type === 'lesson' ? draft.origin.lessonId : undefined
-  const draftOnPath = unitLessons.some((lesson) => lesson.id === draftLessonId)
   const dueCount = getDueCards(state.progress.reviewCards, today).length
   const errorCount = state.progress.errorQueue.length
   const streak = getDisplayedStreak(state.progress, today)
   const pendingReviews = dueCount + errorCount
-  const nextId = plan.nextLesson?.id
-  const currentIndex = unitLessons.findIndex((lesson) => lesson.id === (draftOnPath ? draftLessonId : nextId))
-  const btsLesson = BTS_SITUATIONS.find((situation) => !completedLessons.includes(situation.id)) ?? BTS_SITUATIONS[0]
+  const nextId = plan.nextSession?.lessonId
+  const currentIndex = plan.sessions.findIndex((session) =>
+    draftLessonId ? session.lessonId === draftLessonId : session.lessonId === nextId,
+  )
+  const weeksForStage = CURRICULUM_WEEKS.filter((week) =>
+    selectedStageId ? week.stageId === selectedStageId : true,
+  )
 
   useEffect(() => {
-    if (currentIndex >= 3 && !showingOtherUnit) currentNode.current?.scrollIntoView({ block: 'nearest' })
-  }, [activeUnit.id, currentIndex, showingOtherUnit])
+    if (currentIndex >= 0) currentNode.current?.scrollIntoView({ block: 'nearest' })
+  }, [plan.week.number, currentIndex])
+
+  const playableTotal = plan.weekProgress.playableTotal
+  const progressValue = playableTotal > 0 ? plan.weekProgress.playableDone : plan.weekProgress.completed
+  const progressMax = playableTotal > 0 ? playableTotal : plan.weekProgress.total
 
   return (
     <div className="screen screen--study">
       <AppHeader
         showBrand
         title="Nuri"
-        subtitle="Coreano"
-        actions={streak > 0 ? (
-          <a className="study-streak" href="#/profile/progress" aria-label={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}>
-            <FlameIcon size={20} /> {streak}
-          </a>
-        ) : undefined}
+        subtitle="Trilha anual"
+        actions={
+          streak > 0 ? (
+            <a
+              className="study-streak"
+              href="#/profile/progress"
+              aria-label={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}
+            >
+              <FlameIcon size={20} /> {streak}
+            </a>
+          ) : undefined
+        }
       />
-      <UnitBanner unit={activeUnit} completed={unitProgress.completed} total={unitProgress.total} />
+      <WeekBanner
+        phaseLabel={plan.phaseLabel}
+        weekLabel={plan.weekLabel}
+        phaseHint={plan.phaseHint}
+        completed={progressValue}
+        total={progressMax}
+      />
 
-      {draft && !draftOnPath ? (
+      {draft ? (
         <a className="study-quick" href={originRoute(draft.origin)}>
-          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
-          <span><strong>Continuar atividade</strong><small>{describeOrigin(draft.origin)} · passo {draft.index + 1}</small></span>
+          <span className="study-quick__symbol">
+            <SkillIcon kind="review" size={21} />
+          </span>
+          <span>
+            <strong>Continuar atividade</strong>
+            <small>
+              {describeOrigin(draft.origin)} · passo {draft.index + 1}
+            </small>
+          </span>
           <ChevronIcon size={19} />
         </a>
       ) : null}
 
       <section className="study-path" aria-labelledby="study-path-title">
         <div className="study-path__header">
-          <h2 id="study-path-title">Sua trilha</h2>
-          <label className="study-unit-picker">
-            <span className="visually-hidden">Explorar unidades</span>
-            <select value={selectedUnitId ?? ''} onChange={(event) => setSelectedUnitId(event.target.value || null)}>
-              <option value="">Explorar unidades</option>
-              {UNITS.map((unit) => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
-            </select>
-          </label>
+          <h2 id="study-path-title">Semana · D1 a D5</h2>
+          <div className="study-unit-pickers">
+            <label className="study-unit-picker">
+              <span className="visually-hidden">Etapa</span>
+              <select
+                value={selectedStageId ?? ''}
+                onChange={(event) => {
+                  const stageId = event.target.value ? Number(event.target.value) : null
+                  setSelectedStageId(stageId)
+                  if (stageId) {
+                    const firstWeek = CURRICULUM_WEEKS.find((week) => week.stageId === stageId)
+                    setSelectedWeek(firstWeek?.number ?? null)
+                  }
+                }}
+              >
+                <option value="">Todas as etapas</option>
+                {CURRICULUM_STAGES.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    Etapa {stage.id} · {stage.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="study-unit-picker">
+              <span className="visually-hidden">Semana</span>
+              <select
+                value={selectedWeek ?? plan.week.number}
+                onChange={(event) => setSelectedWeek(Number(event.target.value))}
+              >
+                {weeksForStage.map((week) => (
+                  <option key={week.number} value={week.number}>
+                    {String(week.number).padStart(2, '0')} · {week.mission}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
+
+        {plan.weekProgress.playableTotal === 0 ? (
+          <section className="card card--muted curriculum-outline" aria-labelledby="outline-title">
+            <h3 id="outline-title" className="card__title">
+              Roteiro desta semana
+            </h3>
+            <p className="card__text">
+              <strong>Coreano-alvo:</strong> {plan.week.targetKorean}
+            </p>
+            <p className="card__text">{plan.week.daysSummary.d1to3}</p>
+            <p className="card__text">{plan.week.daysSummary.d4to5}</p>
+            <p className="field__hint">
+              As sessões jogáveis cobrem as semanas 1–4 (até o marco do pedido no café). Esta semana já está no
+              calendário anual e recebe conteúdo nos próximos lotes.
+            </p>
+            <a className="button button--secondary" href="#/lesson/lesson-speak-01">
+              Ir para Semana 1 jogável
+            </a>
+          </section>
+        ) : null}
+
         <ol className="study-path__steps">
-          {unitLessons.map((lesson, index) => {
-            const isDone = completedLessons.includes(lesson.id)
-            const isDraft = draftLessonId === lesson.id
-            const isNext = !draft && lesson.id === nextId && !isDone
-            const status: PathStepStatus = isDraft ? 'draft' : isDone ? 'done' : isNext ? 'current' : 'upcoming'
-            const meta = isDraft && draft
-              ? `Passo ${draft.index + 1} de ${draft.steps.length}`
-              : isDone ? 'Concluída · revisar' : LESSON_KIND_LABELS[lesson.kind]
+          {plan.sessions.map((session, index) => {
+            const isDone = session.lessonId ? completedLessons.includes(session.lessonId) : false
+            const isDraft = draftLessonId !== undefined && session.lessonId === draftLessonId
+            const isNext = !draft && session.lessonId === nextId && !isDone
+            const isOutline = session.status === 'outline'
+            const status: PathStepStatus = isOutline
+              ? 'upcoming'
+              : isDraft
+                ? 'draft'
+                : isDone
+                  ? 'done'
+                  : isNext
+                    ? 'current'
+                    : 'upcoming'
+            const meta = isOutline
+              ? 'Roteiro · em breve'
+              : isDraft && draft
+                ? `Passo ${draft.index + 1} de ${draft.steps.length}`
+                : isDone
+                  ? 'Concluída · revisar'
+                  : `${DAY_SHORT[session.day - 1]} · ${session.skillFocus}`
             return (
-              <li key={lesson.id} ref={index === currentIndex ? currentNode : undefined}>
+              <li key={session.id} ref={index === currentIndex ? currentNode : undefined}>
                 <PathStep
-                  label={lesson.title}
+                  label={`${DAY_SHORT[session.day - 1]} · ${session.title}`}
                   meta={meta}
-                  glyph={glyphForLesson(lesson, activeUnit.id === BTS_UNIT_ID)}
+                  glyph={SKILL_GLYPHS[session.skillFocus]}
                   status={status}
-                  href={`#/lesson/${lesson.id}`}
+                  href={session.lessonId && !isOutline ? `#/lesson/${session.lessonId}` : undefined}
                 />
               </li>
             )
@@ -143,19 +232,30 @@ export function LearnHome() {
 
       {pendingReviews > 0 ? (
         <a className="study-quick study-quick--coral" href="#/review">
-          <span className="study-quick__symbol"><SkillIcon kind="review" size={21} /></span>
-          <span><strong>Revisar agora</strong><small>{pendingReviews} {pendingReviews === 1 ? 'item pendente' : 'itens pendentes'}</small></span>
+          <span className="study-quick__symbol">
+            <SkillIcon kind="review" size={21} />
+          </span>
+          <span>
+            <strong>Revisar agora</strong>
+            <small>
+              {pendingReviews} {pendingReviews === 1 ? 'item pendente' : 'itens pendentes'}
+            </small>
+          </span>
           <ChevronIcon size={19} />
         </a>
       ) : null}
-      {btsLesson && activeUnit.id !== BTS_UNIT_ID ? (
-        <a className="study-quick" href={`#/lesson/${btsLesson.id}`}>
-          <span className="study-quick__symbol"><SkillIcon kind="video" size={21} /></span>
-          <strong>Praticar com trechos do BTS</strong>
-          <ChevronIcon size={19} />
+
+      {!plan.nextSession ? (
+        <a className="button button--primary button--block" href="#/practice">
+          Reforçar o que aprendi
         </a>
       ) : null}
-      {!nextId ? <a className="button button--primary button--block" href="#/practice">Reforçar o que aprendi</a> : null}
+
+      {selectedWeek && selectedWeek !== 1 && getWeekByNumber(1) ? (
+        <button type="button" className="button button--ghost button--block" onClick={() => setSelectedWeek(1)}>
+          Voltar à Semana 1
+        </button>
+      ) : null}
     </div>
   )
 }

@@ -12,7 +12,18 @@ import {
   reviewRemembered,
   upsertReviewCard,
 } from '../core'
-import type { ErrorItemInput, HistoryEntry, NuriProfile, NuriProgress, NuriState, ReviewCard, ReviewResult } from '../core'
+import type {
+  ErrorItemInput,
+  HistoryEntry,
+  NuriProfile,
+  NuriProgress,
+  NuriState,
+  ReviewCard,
+  ReviewResult,
+  SessionEvidenceEntry,
+  SessionEvidenceOutcome,
+} from '../core'
+import { getSessionByLessonId } from '../data/curriculum'
 import { findNewAchievementIds } from './achievements'
 import { SESSION_DRAFT_TYPE, parseSessionDraft } from '../lib/session'
 import type { ListeningAnswer } from '../lib/session'
@@ -99,7 +110,22 @@ export const completeLessonTransition = (state: NuriState, { lessonId, today }: 
     today,
   )
   const { progress: nextProgress, newAchievements } = withAchievements(base)
-  return { state: { ...withProgress(state, nextProgress), activityDraft: null }, xpGained, newAchievements }
+  const curriculumSession = getSessionByLessonId(lessonId)
+  const withEvidence =
+    curriculumSession && !nextProgress.sessionEvidence[curriculumSession.id]
+      ? {
+          ...nextProgress,
+          sessionEvidence: {
+            ...nextProgress.sessionEvidence,
+            [curriculumSession.id]: {
+              outcome: 'supported' as const,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        }
+      : nextProgress
+
+  return { state: { ...withProgress(state, withEvidence), activityDraft: null }, xpGained, newAchievements }
 }
 
 export const awardDailyXpTransition = (state: NuriState, rewardKey: string, today: string): TransitionOutcome => {
@@ -148,6 +174,44 @@ export const recordSkillAttemptTransition = (state: NuriState, skillId: string, 
   return withProgress(state, { ...state.progress, skillFirstTry: { ...state.progress.skillFirstTry, [skillId]: next } })
 }
 
+const evidenceRank = (outcome: SessionEvidenceOutcome): number => {
+  if (outcome === 'unsupported') return 3
+  if (outcome === 'supported') return 2
+  return 1
+}
+
+/** Mantém a melhor evidência da sessão (unsupported > supported > skipped). */
+export const recordSessionEvidenceTransition = (
+  state: NuriState,
+  sessionId: string,
+  outcome: SessionEvidenceOutcome,
+  details: { listens?: number; usedTranscript?: boolean } = {},
+): NuriState => {
+  const previous = state.progress.sessionEvidence[sessionId]
+  if (previous && evidenceRank(previous.outcome) >= evidenceRank(outcome)) {
+    const merged: SessionEvidenceEntry = {
+      ...previous,
+      listens: Math.max(previous.listens ?? 0, details.listens ?? 0) || previous.listens,
+      usedTranscript: previous.usedTranscript || details.usedTranscript,
+      updatedAt: new Date().toISOString(),
+    }
+    return withProgress(state, {
+      ...state.progress,
+      sessionEvidence: { ...state.progress.sessionEvidence, [sessionId]: merged },
+    })
+  }
+  const entry: SessionEvidenceEntry = {
+    outcome,
+    updatedAt: new Date().toISOString(),
+    ...(details.listens !== undefined ? { listens: details.listens } : {}),
+    ...(details.usedTranscript !== undefined ? { usedTranscript: details.usedTranscript } : {}),
+  }
+  return withProgress(state, {
+    ...state.progress,
+    sessionEvidence: { ...state.progress.sessionEvidence, [sessionId]: entry },
+  })
+}
+
 export const recordListeningAnswerTransition = (
   state: NuriState,
   sessionId: string,
@@ -157,7 +221,8 @@ export const recordListeningAnswerTransition = (
   const draft = parseSessionDraft(state.activityDraft)
   if (!draft || draft.sessionId !== sessionId || draft.index !== index || draft.listeningAnswer) return state
   const step = draft.steps[index]
-  if (step.kind !== 'live-listen' || !Number.isInteger(answer.option) || answer.option < 0 || answer.option >= step.options.length) return state
+  const isListenStep = step.kind === 'live-listen' || step.kind === 'listen-choice'
+  if (!isListenStep || !Number.isInteger(answer.option) || answer.option < 0 || answer.option >= step.options.length) return state
 
   const correct = answer.option === step.answerIndex
   let nextState = state
@@ -166,9 +231,22 @@ export const recordListeningAnswerTransition = (
     if (step.errorId) {
       nextState = correct
         ? clearErrorTransition(nextState, step.errorId, sessionId)
-        : queueErrorTransition(nextState, { id: step.errorId, kind: 'live-listen', lastFailedSessionId: sessionId })
+        : queueErrorTransition(nextState, { id: step.errorId, kind: step.kind, lastFailedSessionId: sessionId })
     }
   }
+
+  if (draft.origin.type === 'lesson') {
+    const curriculumSession = getSessionByLessonId(draft.origin.lessonId)
+    if (curriculumSession) {
+      nextState = recordSessionEvidenceTransition(
+        nextState,
+        curriculumSession.id,
+        answer.unaided ? 'unsupported' : 'supported',
+        { usedTranscript: !answer.unaided },
+      )
+    }
+  }
+
   return {
     ...nextState,
     activityDraft: {

@@ -40,7 +40,21 @@ export interface SessionDraftPayload {
 
 export const SESSION_DRAFT_TYPE = 'session'
 
-const STEP_KINDS: readonly string[] = ['info', 'choice', 'tiles', 'write', 'pairs', 'card', 'read', 'live-listen', 'live-read', 'live-speak']
+const STEP_KINDS: readonly string[] = [
+  'info',
+  'choice',
+  'tiles',
+  'write',
+  'pairs',
+  'card',
+  'read',
+  'live-listen',
+  'live-read',
+  'live-speak',
+  'word-listen',
+  'word-repeat',
+  'listen-choice',
+]
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -68,6 +82,16 @@ export const parseSessionDraft = (draft: ActivityDraft | null): SessionDraftPayl
   if (!origin || typeof sessionId !== 'string' || !Array.isArray(steps) || steps.length === 0) return null
   const hasValidSteps = steps.every((step) => {
     if (!isRecord(step) || typeof step.kind !== 'string' || !STEP_KINDS.includes(step.kind)) return false
+    if (step.kind === 'listen-choice') {
+      return (
+        typeof step.speakText === 'string' &&
+        typeof step.revealHangul === 'string' &&
+        Array.isArray(step.options) &&
+        step.options.every((option) => typeof option === 'string') &&
+        isCount(step.answerIndex) &&
+        step.answerIndex < step.options.length
+      )
+    }
     if (!step.kind.startsWith('live-')) return true
     if (typeof step.situationId !== 'string' || !getLiveSituation(step.situationId)) return false
     if (step.kind !== 'live-listen') return true
@@ -78,8 +102,11 @@ export const parseSessionDraft = (draft: ActivityDraft | null): SessionDraftPayl
   if (!hasValidSteps || !isCount(index) || index >= steps.length) return null
   const step = steps[index] as Step
   const hasListeningAnswer =
-    step.kind === 'live-listen' && isRecord(listeningAnswer) && isCount(listeningAnswer.option) &&
-    listeningAnswer.option < step.options.length && typeof listeningAnswer.unaided === 'boolean'
+    (step.kind === 'live-listen' || step.kind === 'listen-choice') &&
+    isRecord(listeningAnswer) &&
+    isCount(listeningAnswer.option) &&
+    listeningAnswer.option < step.options.length &&
+    typeof listeningAnswer.unaided === 'boolean'
   return {
     origin,
     sessionId,

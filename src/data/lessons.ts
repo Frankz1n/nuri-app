@@ -23,11 +23,11 @@ export const SPEAK_UNIT_ID = 'unit-0'
 const SPEAK_STARTER_VOCAB = ['vocab-keopi', 'vocab-mul', 'vocab-cha', 'vocab-ppang'] as const
 const SPEAK_GREETING_VOCAB = ['vocab-annyeonghaseyo', 'vocab-ne', 'vocab-gamsahamnida'] as const
 
-const SPEAK_LESSONS: Lesson[] = [
+const SPEAK_CORE_LESSONS: Lesson[] = [
   {
     id: 'lesson-speak-01',
     unitId: SPEAK_UNIT_ID,
-    title: 'Ouça e diga: café, água, chá',
+    title: 'S01D1 · Reconheça café, água e chá',
     kind: 'speak',
     vocabIds: [...SPEAK_STARTER_VOCAB.slice(0, 3)],
     xpReward: XP_BY_KIND.speak,
@@ -35,7 +35,7 @@ const SPEAK_LESSONS: Lesson[] = [
   {
     id: 'lesson-speak-02',
     unitId: SPEAK_UNIT_ID,
-    title: 'Palavras do café',
+    title: 'S01D2 · Palavras do café e pão',
     kind: 'speak',
     vocabIds: [...SPEAK_STARTER_VOCAB],
     xpReward: XP_BY_KIND.speak,
@@ -43,11 +43,68 @@ const SPEAK_LESSONS: Lesson[] = [
   {
     id: 'lesson-speak-03',
     unitId: SPEAK_UNIT_ID,
-    title: 'Primeiros cumprimentos falados',
+    title: 'S01D3 · Cumprimente e peça com 주세요',
     kind: 'speak',
-    vocabIds: [...SPEAK_GREETING_VOCAB],
+    vocabIds: [...SPEAK_GREETING_VOCAB, 'vocab-juseyo', 'vocab-mul', 'vocab-keopi', 'vocab-cha'],
     xpReward: XP_BY_KIND.speak,
   },
+]
+
+const S01_TRANSFER_LESSON: Lesson = {
+  id: 'lesson-s01-d5',
+  unitId: SPEAK_UNIT_ID,
+  title: 'S01D5 · Pedido novo e bloco 나',
+  kind: 'speak',
+  vocabIds: ['vocab-mul', 'vocab-keopi', 'vocab-cha', 'vocab-juseyo'],
+  xpReward: XP_BY_KIND.speak,
+}
+
+/** Unidade 0: D1–D3 + D5 (D4 fica em unit-1 como lesson-u1-00). */
+const SPEAK_LESSONS: Lesson[] = [...SPEAK_CORE_LESSONS, S01_TRANSFER_LESSON]
+
+const stage1Lesson = (id: string, title: string, kind: LessonKind, extra: Partial<Lesson> = {}): Lesson => ({
+  id,
+  unitId: SPEAK_UNIT_ID,
+  title,
+  kind,
+  xpReward: XP_BY_KIND[kind],
+  ...extra,
+})
+
+/** Semanas 2–4 da Etapa 1 (S02–S04), incluindo marco S04D5. */
+const STAGE1_WEEK_LESSONS: Lesson[] = [
+  stage1Lesson('lesson-s02-d1', 'S02D1 · Distinga 아/어 e 오/우', 'syllable'),
+  stage1Lesson('lesson-s02-d2', 'S02D2 · Compare 가/고 e ㅡ/ㅣ', 'syllable'),
+  stage1Lesson('lesson-s02-d3', 'S02D3 · Contrastes com i breve', 'speak', {
+    vocabIds: ['vocab-ai'],
+  }),
+  stage1Lesson('lesson-s02-d4', 'S02D4 · Trace ㅏ ㅗ ㅁ e monte 마/모', 'syllable'),
+  stage1Lesson('lesson-s02-d5', 'S02D5 · Identifique a vogal pelo som', 'syllable'),
+  stage1Lesson('lesson-s03-d1', 'S03D1 · Aspiração 피/비 · 키/기 · 차/자', 'syllable'),
+  stage1Lesson('lesson-s03-d2', 'S03D2 · Batchim em 물 · 빵 · 밥', 'batchim', {
+    vocabIds: ['vocab-mul', 'vocab-ppang', 'vocab-bap'],
+  }),
+  stage1Lesson('lesson-s03-d3', 'S03D3 · Leia e repita palavras curtas', 'speak', {
+    vocabIds: ['vocab-mul', 'vocab-ppang', 'vocab-bap', 'vocab-cha'],
+  }),
+  stage1Lesson('lesson-s03-d4', 'S03D4 · Monte e escreva com final', 'batchim'),
+  stage1Lesson('lesson-s03-d5', 'S03D5 · Cardápio novo', 'speak', {
+    vocabIds: ['vocab-mul', 'vocab-ppang', 'vocab-bap', 'vocab-juseyo'],
+  }),
+  stage1Lesson('lesson-s04-d1', 'S04D1 · Simples, aspirada e tensa', 'syllable'),
+  stage1Lesson('lesson-s04-d2', 'S04D2 · Cardápio de quatro itens', 'vocab', {
+    vocabIds: ['vocab-keopi', 'vocab-mul', 'vocab-cha', 'vocab-ppang'],
+  }),
+  stage1Lesson('lesson-s04-d3', 'S04D3 · Pedido e confirmação', 'speak', {
+    vocabIds: ['vocab-annyeonghaseyo', 'vocab-keopi', 'vocab-ppang', 'vocab-ne', 'vocab-gamsahamnida', 'vocab-juseyo'],
+  }),
+  stage1Lesson('lesson-s04-d4', 'S04D4 · Monte o pedido completo', 'phrase', {
+    phraseIds: [],
+    vocabIds: ['vocab-cha', 'vocab-mul', 'vocab-juseyo', 'vocab-gamsahamnida'],
+  }),
+  stage1Lesson('lesson-s04-d5', 'S04D5 · Marco: pedido no café', 'speak', {
+    vocabIds: ['vocab-uyu', 'vocab-keopi', 'vocab-mul', 'vocab-cha', 'vocab-ppang', 'vocab-juseyo', 'vocab-gamsahamnida'],
+  }),
 ]
 
 const buildLessonId = (unitNumber: number, position: number): string =>
@@ -86,7 +143,7 @@ const UNIT_1_LESSONS: Lesson[] = [
   {
     id: 'lesson-u1-00',
     unitId: 'unit-1',
-    title: 'Monte 가 e 나',
+    title: 'S01D4 · Monte 가 e 나',
     kind: 'syllable',
     xpReward: XP_BY_KIND.syllable,
   },
@@ -201,9 +258,16 @@ const UNIT_8_LESSONS: Lesson[] = [
 
 const btsIds = new Set(BTS_SITUATIONS.map((situation) => situation.id))
 
+const UNIT_1_WITHOUT_PILOT = UNIT_1_LESSONS.filter((lesson) => lesson.id !== 'lesson-u1-00')
+const UNIT_1_PILOT = UNIT_1_LESSONS.find((lesson) => lesson.id === 'lesson-u1-00')!
+
+/** Ordem canônica: S01 → S02–S04 → alfabeto legado → … */
 export const LESSONS: readonly Lesson[] = [
-  ...SPEAK_LESSONS,
-  ...UNIT_1_LESSONS,
+  ...SPEAK_CORE_LESSONS,
+  UNIT_1_PILOT,
+  S01_TRANSFER_LESSON,
+  ...STAGE1_WEEK_LESSONS,
+  ...UNIT_1_WITHOUT_PILOT,
   ...UNIT_2_LESSONS,
   ...UNIT_3_LESSONS,
   ...UNIT_4_LESSONS,
@@ -232,11 +296,11 @@ export const UNITS: readonly Unit[] = [
   {
     id: SPEAK_UNIT_ID,
     number: 0,
-    title: 'Fale desde o começo',
-    description: 'Ouça palavras curtas do café, repita em voz alta e ganhe confiança na pronúncia.',
-    lessonIds: SPEAK_LESSONS.map((lesson) => lesson.id),
+    title: 'Etapa 1 · Primeiros sons',
+    description: 'Semanas 1–4: bebidas, blocos, batchim e o marco do pedido no café.',
+    lessonIds: [...SPEAK_LESSONS, ...STAGE1_WEEK_LESSONS].map((lesson) => lesson.id),
   },
-  defineUnit(1, 'Primeiros blocos', 'Comece com ㄱ, ㄴ e ㅏ; monte 가 e 나. Depois siga as vogais.'),
+  defineUnit(1, 'Primeiros blocos', 'S01D4 monta 가 e 나; depois siga as vogais do alfabeto.'),
   defineUnit(2, 'Novas conexões', 'Consoantes básicas, revisão e a sequência ㅣ → 피 → 키.'),
   defineUnit(3, 'Ampliando o hangul', 'Domine as vogais compostas e as consoantes duplas.'),
   defineUnit(4, 'Monte seus primeiros blocos', 'Monte sílabas completas e descubra o batchim.'),

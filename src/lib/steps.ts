@@ -126,9 +126,21 @@ export interface WordRepeatStep extends StepBase {
   prompt: string
 }
 
+/** Escuta avaliativa: áudio primeiro; hangul só com apoio ou após a resposta. */
+export interface ListenChoiceStep extends StepBase {
+  kind: 'listen-choice'
+  speakText: string
+  prompt: string
+  options: string[]
+  answerIndex: number
+  explanation: string
+  /** Hangul revelado após a tentativa ou ao pedir apoio. */
+  revealHangul: string
+}
+
 export type Step =
   | InfoStep | ChoiceStep | TilesStep | WriteStep | PairsStep | CardStep | ReadStep
-  | LiveListeningStep | LiveDialogueStep | WordListenStep | WordRepeatStep
+  | LiveListeningStep | LiveDialogueStep | WordListenStep | WordRepeatStep | ListenChoiceStep
 
 export const isGradedStep = (step: Step): boolean =>
   step.kind !== 'info' &&

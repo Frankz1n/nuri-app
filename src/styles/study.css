@@ -150,6 +150,13 @@ html.dark {
   overflow-wrap: anywhere;
 }
 
+.study-unit__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  color: var(--muted, #5b6b62);
+}
+
 .study-unit__progress {
   display: grid;
   grid-template-columns: minmax(0, 7.25rem) auto;
@@ -222,10 +229,28 @@ html.dark {
   line-height: 1.2;
 }
 
+.study-unit-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 70%;
+}
+
 .study-unit-picker {
   display: flex;
   min-width: 0;
-  max-width: 53%;
+  flex: 1 1 7rem;
+}
+
+.curriculum-outline {
+  margin-bottom: 0.75rem;
+}
+
+.study-node.is-static {
+  cursor: default;
+  opacity: 0.88;
 }
 
 .study-unit-picker select {

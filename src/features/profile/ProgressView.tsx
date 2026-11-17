@@ -1,6 +1,7 @@
 import { todayKey } from '../../core'
 import { AppHeader } from '../../components/AppHeader'
 import { ProgressBar } from '../../components/ProgressBar'
+import { buildGuidedCurriculumPlan, countCurriculumEvidence, listPlayableLessonIds } from '../../lib/curriculumPath'
 import { SKILL_LABELS } from '../../lib/stepBuilders'
 import { getTodayXp } from '../../lib/catalog'
 import { ACHIEVEMENTS } from '../../state/achievements'
@@ -21,6 +22,10 @@ export function ProgressView() {
   const skills = Object.entries(progress.skillFirstTry)
     .filter(([, stats]) => stats.total > 0)
     .toSorted(([a], [b]) => (SKILL_LABELS[a] ?? a).localeCompare(SKILL_LABELS[b] ?? b))
+  const curriculum = buildGuidedCurriculumPlan(progress.completedLessons)
+  const playableIds = listPlayableLessonIds()
+  const playableDone = playableIds.filter((lessonId) => progress.completedLessons.includes(lessonId)).length
+  const evidence = countCurriculumEvidence(progress.sessionEvidence)
 
   return (
     <div className="screen">
@@ -43,6 +48,30 @@ export function ProgressView() {
           <span className="stat__value">{getTodayXp(state, today)}</span>
           <span className="stat__label">XP hoje</span>
         </div>
+      </section>
+
+      <section className="card" aria-labelledby="curriculum-title">
+        <h2 id="curriculum-title" className="card__title">
+          Trilha anual
+        </h2>
+        <p className="card__text">
+          {curriculum.phaseLabel}
+          <br />
+          Semana ativa: <strong>{curriculum.weekLabel}</strong>
+        </p>
+        <p className="card__text">
+          Sessões jogáveis (S01–S04): {playableDone}/{playableIds.length}
+        </p>
+        <ProgressBar
+          value={playableDone}
+          max={Math.max(1, playableIds.length)}
+          label="Progresso das sessões jogáveis das semanas 1 a 4"
+          isCompact
+        />
+        <p className="field__hint">
+          Evidência de escuta/fala: {evidence.unsupported} sem apoio · {evidence.supported} com apoio ·{' '}
+          {evidence.skipped} fala pulada. O marco S04D5 fecha o pedido no café. XP e sequência acompanham o hábito.
+        </p>
       </section>
 
       <section className="card" aria-labelledby="achievements-title">

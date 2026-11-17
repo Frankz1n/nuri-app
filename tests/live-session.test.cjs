@@ -18,7 +18,17 @@ test('a trilha começa pela fala, depois hangul, e live fica depois do núcleo e
   assert.equal(findNextLesson(['lesson-speak-01', 'lesson-speak-02', 'lesson-speak-03']).id, 'lesson-u1-00')
   assert.equal(
     findNextLesson(['lesson-speak-01', 'lesson-speak-02', 'lesson-speak-03', 'lesson-u1-00']).id,
-    'lesson-u1-01',
+    'lesson-s01-d5',
+  )
+  assert.equal(
+    findNextLesson([
+      'lesson-speak-01',
+      'lesson-speak-02',
+      'lesson-speak-03',
+      'lesson-u1-00',
+      'lesson-s01-d5',
+    ]).id,
+    'lesson-s02-d1',
   )
 
   const untilLive = LESSONS.filter((lesson) => lesson.kind !== 'live').map((lesson) => lesson.id)

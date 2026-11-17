@@ -6,7 +6,7 @@ import type { ListeningAnswer, SessionDraftPayload } from '../../lib/session'
 import type { Step } from '../../lib/steps'
 import { useNuri } from '../../state/useNuri'
 import { LiveDialogueView, LiveListeningView } from './LiveViews'
-import { WordListenView, WordRepeatView } from './SpeakViews'
+import { ListenChoiceView, WordListenView, WordRepeatView } from './SpeakViews'
 import { CardView, ChoiceView, InfoView, PairsView, ReadView, TilesView, WriteView } from './StepViews'
 
 const STEP_ACTIVITY: Record<Step['kind'], { glyph: SkillGlyph; label: string }> = {
@@ -22,6 +22,7 @@ const STEP_ACTIVITY: Record<Step['kind'], { glyph: SkillGlyph; label: string }> 
   'live-speak': { glyph: 'speak', label: 'Fala' },
   'word-listen': { glyph: 'listen', label: 'Ouvir' },
   'word-repeat': { glyph: 'speak', label: 'Repetir' },
+  'listen-choice': { glyph: 'listen', label: 'Escuta' },
 }
 
 export interface SessionSummary {
@@ -62,7 +63,12 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
   }
 
   const handleListeningAnswer = (answer: ListeningAnswer): void => {
-    if (step.kind !== 'live-listen' || !actions.recordListeningAnswer(session.sessionId, index, answer)) return
+    if (
+      (step.kind !== 'live-listen' && step.kind !== 'listen-choice') ||
+      !actions.recordListeningAnswer(session.sessionId, index, answer)
+    ) {
+      return
+    }
     if (answer.unaided) {
       countsRef.current.gradedCount++
       if (answer.option === step.answerIndex) countsRef.current.firstTryHits++
@@ -85,6 +91,8 @@ export function SessionRunner({ title, session, onProgress, onExit, onFinish }: 
     switch (step.kind) {
       case 'live-listen':
         return <LiveListeningView step={step} answer={listeningAnswer} onAnswer={handleListeningAnswer} onContinue={handleContinue} />
+      case 'listen-choice':
+        return <ListenChoiceView step={step} answer={listeningAnswer} onAnswer={handleListeningAnswer} onContinue={handleContinue} />
       case 'live-read':
       case 'live-speak':
         return <LiveDialogueView step={step} onContinue={handleContinue} />

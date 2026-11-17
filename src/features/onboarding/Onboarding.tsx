@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { DAILY_GOAL_OPTIONS, formatDailyGoalLabel } from '../../core'
 import type { DailyGoalMinutes } from '../../core'
-import { UNITS, getLetterById, getVocabById } from '../../data'
+import { getLetterById, getStageById, getVocabById, getWeekByNumber } from '../../data'
 import { BrandMark } from '../../components/AppHeader'
 import { ProgressBar } from '../../components/ProgressBar'
+import { recommendCurriculumPlacement } from '../../lib/curriculumPath'
 import { createSessionRandom } from '../../lib/random'
 import type { ChoiceStep } from '../../lib/steps'
 import {
@@ -52,13 +53,6 @@ const buildOrientationSteps = (): ChoiceStep[] => {
   ].flatMap((step) => step ?? [])
 }
 
-const recommendUnitNumber = (hits: number, familiarity?: string): number => {
-  if (familiarity === 'Nunca vi hangul' || hits <= 1) return 0
-  if (hits <= 3) return 1
-  if (hits <= 5) return 4
-  return 5
-}
-
 export function Onboarding() {
   const { state, actions } = useNuri()
   const [phase, setPhase] = useState<Phase>('profile')
@@ -93,10 +87,10 @@ export function Onboarding() {
     navigateTo(hash, { replace: true })
   }
 
-  const recommendedUnit =
-    UNITS.find((unit) => unit.number === recommendUnitNumber(orientationHits, familiarity)) ?? UNITS[0]
-
-  const starterHref = `#/lesson/${recommendedUnit.lessonIds[0] ?? 'lesson-speak-01'}`
+  const placement = recommendCurriculumPlacement(orientationHits, familiarity)
+  const recommendedStage = getStageById(placement.stageId)
+  const recommendedWeek = getWeekByNumber(placement.weekNumber)
+  const starterHref = `#/lesson/${placement.lessonId}`
   const zeroHref = '#/lesson/lesson-speak-01'
 
   return (
@@ -203,7 +197,8 @@ export function Onboarding() {
             Por onde começar?
           </h2>
           <p className="card__text">
-            Se você nunca viu coreano, começamos com café, água e chá: ouvir e repetir. A orientação só ajusta o ponto de entrada.
+            Iniciante absoluto começa na Semana 1 (pedir uma bebida). Se você já estuda, a orientação curta sugere a etapa
+            — o conteúdo avançado aparece como roteiro até os próximos lotes.
           </p>
           <div className="stack">
             <button type="button" className="button button--secondary button--block" onClick={() => setPhase('orientation')}>
@@ -247,21 +242,28 @@ export function Onboarding() {
             Sugestão de início
           </h2>
           <p className="card__text">
-            Você acertou {orientationHits} de {orientationSteps.length} de primeira. Recomendamos começar por{' '}
+            Você acertou {orientationHits} de {orientationSteps.length} de primeira. O Nuri recomenda{' '}
             <strong>
-              {recommendedUnit.number === 0 ? recommendedUnit.title : `Unidade ${recommendedUnit.number}: ${recommendedUnit.title}`}
+              Etapa {placement.stageId}
+              {recommendedStage ? ` · ${recommendedStage.title}` : ''}
             </strong>
+            {recommendedWeek ? (
+              <>
+                , semana {String(recommendedWeek.number).padStart(2, '0')} · {recommendedWeek.mission}
+              </>
+            ) : null}
             .
           </p>
+          <p className="card__text">{placement.reason}</p>
           <div className="stack">
             <button type="button" className="button button--primary button--block" onClick={() => finish(starterHref)}>
               Começar por aí
             </button>
             <button type="button" className="button button--secondary button--block" onClick={() => finish(zeroHref)}>
-              Prefiro começar do zero
+              Prefiro começar do zero (Semana 1)
             </button>
             <button type="button" className="button button--ghost button--block" onClick={() => finish('#/learn')}>
-              Ver todas as unidades
+              Ver a trilha anual
             </button>
           </div>
         </section>

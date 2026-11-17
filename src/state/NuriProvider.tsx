@@ -8,6 +8,7 @@ import {
   completeLessonTransition,
   queueErrorTransition,
   recordSkillAttemptTransition,
+  recordSessionEvidenceTransition,
   recordListeningAnswerTransition,
   reviewCardTransition,
   setProfileTransition,
@@ -65,6 +66,8 @@ export function NuriProvider({ children }: { children: ReactNode }) {
       queueError: (item) => apply((current) => queueErrorTransition(current, item)),
       clearError: (itemId, sessionId) => apply((current) => clearErrorTransition(current, itemId, sessionId)),
       recordSkillAttempt: (skillId, isHit) => apply((current) => recordSkillAttemptTransition(current, skillId, isHit)),
+      recordSessionEvidence: (sessionId, outcome, details) =>
+        apply((current) => recordSessionEvidenceTransition(current, sessionId, outcome, details)),
       setProfile: (patch) => apply((current) => setProfileTransition(current, patch)),
       recordListeningAnswer: (sessionId, index, answer) => {
         const nextState = recordListeningAnswerTransition(stateRef.current, sessionId, index, answer)

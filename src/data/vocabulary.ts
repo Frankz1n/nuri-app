@@ -20,6 +20,7 @@ export const VOCABULARY: readonly VocabItem[] = [
   { id: 'vocab-joesonghamnida', hangul: '죄송합니다', translation: 'sinto muito / com licença', romanization: 'joesonghamnida', category: 'saudacoes', note: 'Pedido de desculpas formal.' },
   { id: 'vocab-mianhaeyo', hangul: '미안해요', translation: 'desculpe', romanization: 'mianhaeyo', category: 'saudacoes' },
   { id: 'vocab-ne', hangul: '네', translation: 'sim', romanization: 'ne', category: 'saudacoes' },
+  { id: 'vocab-juseyo', hangul: '주세요', translation: 'por favor / me dá (pedido educado)', romanization: 'juseyo', category: 'saudacoes', note: 'Usado após o que você pede: 물 주세요.' },
   { id: 'vocab-aniyo', hangul: '아니요', translation: 'não', romanization: 'aniyo', category: 'saudacoes' },
   { id: 'vocab-annyeonghi-gaseyo', hangul: '안녕히 가세요', translation: 'tchau (para quem vai embora)', romanization: 'annyeonghi gaseyo', category: 'saudacoes', note: 'Dito por quem fica.' },
   { id: 'vocab-annyeonghi-gyeseyo', hangul: '안녕히 계세요', translation: 'tchau (para quem fica)', romanization: 'annyeonghi gyeseyo', category: 'saudacoes', note: 'Dito por quem vai embora.' },

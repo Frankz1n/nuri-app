@@ -29,6 +29,7 @@ export const SKILL_LABELS: Readonly<Record<string, string>> = {
   'letter-sound': 'Romanização das letras',
   listening: 'Compreensão oral',
   'listening-transfer': 'Escuta em outro contexto',
+  'speaking-practice': 'Prática de fala',
   'letter-char': 'Reconhecer letras',
   'letter-block': 'Letras em blocos',
   write: 'Escrita',

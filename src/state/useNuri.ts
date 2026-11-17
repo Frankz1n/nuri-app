@@ -5,6 +5,7 @@ import type {
   NuriState,
   ReviewResult,
   SaveStateFailureReason,
+  SessionEvidenceOutcome,
   StoredStateStatus,
 } from '../core'
 import type { ListeningAnswer } from '../lib/session'
@@ -18,6 +19,11 @@ export interface NuriActions {
   queueError: (item: ErrorItemInput) => void
   clearError: (itemId: string, sessionId: string) => void
   recordSkillAttempt: (skillId: string, isHit: boolean) => void
+  recordSessionEvidence: (
+    sessionId: string,
+    outcome: SessionEvidenceOutcome,
+    details?: { listens?: number; usedTranscript?: boolean },
+  ) => void
   setProfile: (patch: Partial<NuriProfile>) => void
   recordListeningAnswer: (sessionId: string, index: number, answer: ListeningAnswer) => boolean
   setDraft: (type: string, payload: unknown) => void

@@ -54,6 +54,16 @@ export interface SkillFirstTryStats {
   total: number
 }
 
+/** Resultado de evidência por sessão do currículo (S01D1…). */
+export type SessionEvidenceOutcome = 'unsupported' | 'supported' | 'skipped'
+
+export interface SessionEvidenceEntry {
+  outcome: SessionEvidenceOutcome
+  listens?: number
+  usedTranscript?: boolean
+  updatedAt: string
+}
+
 export interface HistoryEntry {
   day: string
   xp: number
@@ -71,6 +81,8 @@ export interface NuriProgress {
   reviewCards: ReviewCard[]
   errorQueue: ErrorItem[]
   skillFirstTry: Record<string, SkillFirstTryStats>
+  /** Evidência por sessão do currículo (`S01D1`, …). */
+  sessionEvidence: Record<string, SessionEvidenceEntry>
   dailyXpAwards: Record<string, string>
   achievements: string[]
   history: HistoryEntry[]
@@ -119,6 +131,7 @@ export const createEmptyState = (): NuriState => ({
     reviewCards: [],
     errorQueue: [],
     skillFirstTry: {},
+    sessionEvidence: {},
     dailyXpAwards: {},
     achievements: [],
     history: [],
@@ -223,6 +236,30 @@ const sanitizeSkillFirstTry = (value: unknown): Record<string, SkillFirstTryStat
   return Object.fromEntries(entries)
 }
 
+const isSessionEvidenceOutcome = (value: unknown): value is SessionEvidenceOutcome =>
+  value === 'unsupported' || value === 'supported' || value === 'skipped'
+
+const sanitizeSessionEvidence = (value: unknown): Record<string, SessionEvidenceEntry> => {
+  if (!isRecord(value)) return {}
+  const entries = Object.entries(value).flatMap(([sessionId, entry]): [string, SessionEvidenceEntry][] => {
+    if (!isRecord(entry) || !isSessionEvidenceOutcome(entry.outcome) || typeof entry.updatedAt !== 'string') return []
+    return [
+      [
+        sessionId,
+        {
+          outcome: entry.outcome,
+          updatedAt: entry.updatedAt,
+          ...(typeof entry.listens === 'number' && Number.isFinite(entry.listens)
+            ? { listens: Math.max(0, Math.trunc(entry.listens)) }
+            : {}),
+          ...(typeof entry.usedTranscript === 'boolean' ? { usedTranscript: entry.usedTranscript } : {}),
+        },
+      ],
+    ]
+  })
+  return Object.fromEntries(entries)
+}
+
 const sanitizeUnitProgress = (value: unknown): Record<string, number> =>
   isRecord(value)
     ? Object.fromEntries(
@@ -278,6 +315,7 @@ const sanitizeProgress = (value: unknown, fallbackDay: string): NuriProgress => 
     reviewCards: sanitizeReviewCards(source.reviewCards, fallbackDay),
     errorQueue: sanitizeErrorQueue(source.errorQueue),
     skillFirstTry: sanitizeSkillFirstTry(source.skillFirstTry),
+    sessionEvidence: sanitizeSessionEvidence(source.sessionEvidence),
     dailyXpAwards: asStringRecord(source.dailyXpAwards, isValidDateKey),
     achievements: asUniqueStrings(source.achievements),
     history: sanitizeHistory(source.history),

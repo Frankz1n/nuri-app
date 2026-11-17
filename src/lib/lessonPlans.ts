@@ -3,7 +3,8 @@ import type { Lesson, VocabItem } from '../data'
 import { sample, shuffle } from './random'
 import { buildLiveListeningStep } from './liveListening'
 import type { Random } from './random'
-import type { ChoiceStep, InfoStep, Step, WordListenStep, WordRepeatStep } from './steps'
+import { STAGE1_PLAN_BUILDERS } from './stage1Plans'
+import type { ChoiceStep, InfoStep, ListenChoiceStep, Step, TilesStep, WordListenStep, WordRepeatStep } from './steps'
 import {
   buildAssembleDemoInfo,
   buildLetterBlockStep,
@@ -296,6 +297,174 @@ const buildSpeakPair = (vocabId: string): Step[] => {
   return [listen, repeat]
 }
 
+const buildListenChoice = (
+  vocabId: string,
+  distractorTranslations: readonly string[],
+  random: Random,
+  skillId = 'listening',
+): ListenChoiceStep | null => {
+  const vocab = getVocabById(vocabId)
+  if (!vocab) return null
+  const options = shuffle([vocab.translation, ...distractorTranslations], random)
+  return {
+    kind: 'listen-choice',
+    skillId,
+    errorId: `listen-choice:${vocab.id}`,
+    speakText: vocab.hangul,
+    prompt: 'O que você ouviu?',
+    options,
+    answerIndex: options.indexOf(vocab.translation),
+    explanation: `Você ouviu ${vocab.hangul}. É ${vocab.translation}.`,
+    revealHangul: vocab.hangul,
+  }
+}
+
+const buildAudioContrastStep = (
+  leftVocabId: string,
+  rightVocabId: string,
+  askFor: 'left' | 'right',
+  random: Random,
+): ListenChoiceStep | null => {
+  const left = getVocabById(leftVocabId)
+  const right = getVocabById(rightVocabId)
+  if (!left || !right) return null
+  const target = askFor === 'left' ? left : right
+  const options = shuffle([left.translation, right.translation], random)
+  return {
+    kind: 'listen-choice',
+    skillId: 'listening',
+    errorId: `listen-choice:contrast:${target.id}`,
+    speakText: target.hangul,
+    prompt: 'Qual áudio é este?',
+    options,
+    answerIndex: options.indexOf(target.translation),
+    explanation: `Era ${target.hangul} (${target.translation}).`,
+    revealHangul: target.hangul,
+  }
+}
+
+/** S01D1 — reconhecer café, água e chá sem hangul na primeira tentativa. */
+const buildS01D1Steps = (random: Random): Step[] =>
+  compact<Step>([
+    {
+      kind: 'info',
+      skillId: 'listening',
+      title: 'No balcão do café',
+      lines: [
+        'O Horangi pede bebidas em coreano. Ouça primeiro; o hangul só aparece se você pedir apoio.',
+        'Depois você escolhe a bebida pelo sentido.',
+      ],
+    },
+    ...buildSpeakPair('vocab-keopi'),
+    ...buildSpeakPair('vocab-mul'),
+    ...buildSpeakPair('vocab-cha'),
+    buildListenChoice('vocab-mul', ['café (bebida)', 'chá'], random),
+    buildAudioContrastStep('vocab-keopi', 'vocab-cha', 'right', random),
+    {
+      kind: 'word-repeat',
+      skillId: 'speaking-practice',
+      vocabId: 'vocab-keopi',
+      prompt: 'Repita 커피 e compare com o modelo',
+    },
+    buildListenChoice('vocab-cha', ['água', 'café (bebida)'], random, 'listening-transfer'),
+  ])
+
+/** S01D2 — as três bebidas + 빵, associação palavra–imagem (tradução). */
+const buildS01D2Steps = (random: Random): Step[] => {
+  const items = ['vocab-keopi', 'vocab-mul', 'vocab-cha', 'vocab-ppang'].flatMap((id) => getVocabById(id) ?? [])
+  return compact<Step>([
+    {
+      kind: 'info',
+      skillId: 'vocab',
+      title: 'Palavras do café',
+      lines: ['Agora você lê e associa café, água, chá e pão.', 'Hangul e sentido juntos.'],
+    },
+    ...items.flatMap((vocab) => buildSpeakPair(vocab.id)),
+    ...items.map((vocab) => buildVocabChoiceStep(vocab, 'ko-pt', random)),
+    ...sample(items, 2, random).map((vocab) => buildVocabChoiceStep(vocab, 'pt-ko', random)),
+  ])
+}
+
+/** S01D3 — cumprimento + pedido com 주세요. */
+const buildS01D3Steps = (random: Random): Step[] => {
+  const orderDrink = (drinkHangul: string, drinkId: string): TilesStep => {
+    const bank = shuffle([drinkHangul, '주세요', '네', '안녕하세요'], random)
+    return {
+      kind: 'tiles',
+      skillId: 'phrase',
+      errorId: `phrase:order:${drinkId}`,
+      prompt: 'Monte o pedido educado',
+      bank,
+      answer: [drinkHangul, '주세요'],
+      join: ' ',
+      tileLanguage: 'ko',
+      patternHint: 'bebida + 주세요',
+      explanation: `${drinkHangul} 주세요 = peça ${getVocabById(drinkId)?.translation ?? 'a bebida'} com educação.`,
+    }
+  }
+
+  return compact<Step>([
+    {
+      kind: 'info',
+      skillId: 'listening',
+      title: 'Cumprimente e peça',
+      lines: [
+        'No café você cumprimenta, pede com 주세요 e agradece.',
+        'Monte as peças na ordem certa.',
+      ],
+    },
+    ...buildSpeakPair('vocab-annyeonghaseyo'),
+    ...buildSpeakPair('vocab-juseyo'),
+    ...buildSpeakPair('vocab-gamsahamnida'),
+    orderDrink('물', 'vocab-mul'),
+    orderDrink('커피', 'vocab-keopi'),
+    {
+      kind: 'tiles',
+      skillId: 'phrase',
+      errorId: 'phrase:thanks',
+      prompt: 'Agradeça depois do pedido',
+      bank: shuffle(['감사합니다', '네', '물', '주세요'], random),
+      answer: ['감사합니다'],
+      join: ' ',
+      tileLanguage: 'ko',
+      explanation: '감사합니다 = obrigado(a), forma formal.',
+    },
+    buildListenChoice('vocab-ne', ['não', 'olá'], random),
+  ])
+}
+
+/** S01D5 — pedido com outra voz + montar 나 sem contorno. */
+const buildS01D5Steps = (random: Random): Step[] =>
+  compact<Step>([
+    {
+      kind: 'info',
+      skillId: 'listening-transfer',
+      title: 'Mesmo pedido, situação nova',
+      lines: [
+        'Ouça de novo sem texto e reconheça a bebida.',
+        'Depois reconstrua 나 sem ver o contorno pronto.',
+      ],
+    },
+    buildListenChoice('vocab-keopi', ['água', 'chá'], random, 'listening-transfer'),
+    buildListenChoice('vocab-mul', ['pão', 'chá'], random, 'listening-transfer'),
+    {
+      kind: 'tiles',
+      skillId: 'phrase',
+      errorId: 'phrase:order:transfer',
+      prompt: 'Peça chá com 주세요',
+      bank: shuffle(['차', '주세요', '빵', '네'], random),
+      answer: ['차', '주세요'],
+      join: ' ',
+      tileLanguage: 'ko',
+      explanation: '차 주세요 = chá, por favor.',
+    },
+    buildSyllableAssembleStep('나', random, {
+      helpLevel: 'apply',
+      distractors: ['ㄱ', 'ㅏ'],
+      prompt: 'Monte 나 sem contorno',
+    }),
+  ])
+
 const buildSpeakLessonSteps = (vocabIds: readonly string[], random: Random): Step[] => {
   const items = vocabIds.flatMap((vocabId) => getVocabById(vocabId) ?? [])
   if (items.length === 0) return []
@@ -318,8 +487,14 @@ const buildSpeakLessonSteps = (vocabIds: readonly string[], random: Random): Ste
 }
 
 export const buildLessonSteps = (lesson: Lesson, random: Random): Step[] => {
+  if (lesson.id === 'lesson-speak-01') return buildS01D1Steps(random)
+  if (lesson.id === 'lesson-speak-02') return buildS01D2Steps(random)
+  if (lesson.id === 'lesson-speak-03') return buildS01D3Steps(random)
+  if (lesson.id === 'lesson-s01-d5') return buildS01D5Steps(random)
   if (lesson.id === 'lesson-u1-00') return buildPilotBlocksSteps(random)
   if (lesson.id === 'lesson-u2-16') return buildPiKiDemoSteps(random)
+  const stage1Builder = STAGE1_PLAN_BUILDERS[lesson.id]
+  if (stage1Builder) return stage1Builder(random)
 
   switch (lesson.kind) {
     case 'speak':

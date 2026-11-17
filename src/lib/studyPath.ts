@@ -1,6 +1,7 @@
 import { ALL_LIVE_SITUATIONS, LIVE_SITUATIONS, LESSONS, UNITS } from '../data'
 import type { Lesson, Unit } from '../data'
 import { findNextLesson, getLessonsOfUnit, getUnitOfLesson, summarizeUnit } from './catalog'
+import { findNextCurriculumSession } from './curriculumPath'
 import type { PracticeMode } from './session'
 
 export interface GuidedStudyPlan {
@@ -81,7 +82,10 @@ const PRACTICE_FOR_KIND: Readonly<Record<Lesson['kind'], GuidedStudyPlan['sugges
 }
 
 export const buildGuidedStudyPlan = (completedLessons: readonly string[]): GuidedStudyPlan => {
-  const nextLesson = findNextLesson(completedLessons)
+  const nextCurriculum = findNextCurriculumSession(completedLessons)
+  const nextLesson =
+    (nextCurriculum?.lessonId ? LESSONS.find((lesson) => lesson.id === nextCurriculum.lessonId) : undefined) ??
+    findNextLesson(completedLessons)
   const lastCompleted = [...LESSONS].reverse().find((lesson) => completedLessons.includes(lesson.id))
   const currentUnit = nextLesson ? getUnitOfLesson(nextLesson) : lastCompleted ? getUnitOfLesson(lastCompleted) : UNITS[0]
   const phase = currentUnit ? PHASE_BY_UNIT[currentUnit.number] : undefined
